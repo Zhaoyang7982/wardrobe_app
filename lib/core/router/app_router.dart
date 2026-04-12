@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -34,6 +35,9 @@ abstract final class AppRoutePaths {
   static const home = '/home';
   static const wardrobe = '/wardrobe';
   static const todayRecommendation = '/wardrobe/today-recommendation';
+
+  /// Web 主导航内「今日推荐」Tab（仅 Web 构建注册对应 [StatefulShellBranch]）
+  static const todayRecommendationsTab = '/today-recommendations';
   static const outfit = '/outfit';
   static const calendar = '/calendar';
   static const profile = '/profile';
@@ -156,6 +160,15 @@ abstract final class AppRouter {
               ),
             ],
           ),
+          if (kIsWeb)
+            StatefulShellBranch(
+              routes: <RouteBase>[
+                GoRoute(
+                  path: AppRoutePaths.todayRecommendationsTab,
+                  builder: (context, state) => const TodayRecommendationPage(),
+                ),
+              ],
+            ),
         ],
       ),
       GoRoute(

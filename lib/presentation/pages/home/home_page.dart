@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,13 +12,27 @@ class _NavDest {
   final String label;
 }
 
-const List<_NavDest> _kNavDestinations = [
+/// 与移动端一致的五段主导航（非 Web 仅此项）
+const List<_NavDest> _kCoreNavDestinations = [
   _NavDest(Icons.checkroom_outlined, Icons.checkroom, '衣橱'),
   _NavDest(Icons.style_outlined, Icons.style, '搭配'),
   _NavDest(Icons.calendar_month_outlined, Icons.calendar_month, '日历'),
   _NavDest(Icons.bar_chart_outlined, Icons.bar_chart, '统计'),
   _NavDest(Icons.person_outline, Icons.person, '我的'),
 ];
+
+const _NavDest _kTodayRecommendNav = _NavDest(
+  Icons.wb_sunny_outlined,
+  Icons.wb_sunny,
+  '今日推荐',
+);
+
+List<_NavDest> _navDestinationsForBuild() {
+  if (kIsWeb) {
+    return [..._kCoreNavDestinations, _kTodayRecommendNav];
+  }
+  return _kCoreNavDestinations;
+}
 
 /// 主框架：窄屏底部 [NavigationBar]；宽屏（≥900）左侧 [NavigationRail]。
 /// 各 Tab 子栈仍由 [StatefulNavigationShell] 托管。
@@ -30,6 +45,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final useRail = width >= AppConstants.layoutDesktopMinWidth;
+    final navDests = _navDestinationsForBuild();
 
     if (useRail) {
       final theme = Theme.of(context);
@@ -58,7 +74,7 @@ class HomePage extends StatelessWidget {
                 selectedIndex: navigationShell.currentIndex,
                 onDestinationSelected: navigationShell.goBranch,
                 destinations: [
-                  for (final d in _kNavDestinations)
+                  for (final d in navDests)
                     NavigationRailDestination(
                       icon: Icon(d.icon),
                       selectedIcon: Icon(d.selectedIcon),
@@ -84,7 +100,7 @@ class HomePage extends StatelessWidget {
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: navigationShell.goBranch,
         destinations: [
-          for (final d in _kNavDestinations)
+          for (final d in navDests)
             NavigationDestination(
               icon: Icon(d.icon),
               selectedIcon: Icon(d.selectedIcon),

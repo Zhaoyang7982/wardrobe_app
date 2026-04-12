@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -542,6 +543,47 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
     );
   }
 
+  /// Web：加高 Chip 行并加大 [ChipTheme] 内边距，减轻 CanvasKit + Noto 下文字被裁切
+  Widget _categoryChipStrip(ThemeData theme) {
+    final stripHeight = kIsWeb ? 72.0 : 56.0;
+    final strip = SizedBox(
+      height: stripHeight,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
+        itemCount: _chipCategories.length,
+        separatorBuilder: (context, index) => const SizedBox(width: AppTheme.spaceXs),
+        itemBuilder: (context, i) {
+          final c = _chipCategories[i];
+          final selected = _quickCategory == c;
+          return Center(
+            child: ChoiceChip(
+              label: AppTheme.filterChipLabel(c),
+              selected: selected,
+              onSelected: (_) {
+                setState(() => _quickCategory = c);
+                _load();
+              },
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.standard,
+            ),
+          );
+        },
+      ),
+    );
+    if (!kIsWeb) {
+      return strip;
+    }
+    return Theme(
+      data: theme.copyWith(
+        chipTheme: theme.chipTheme.copyWith(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        ),
+      ),
+      child: strip,
+    );
+  }
+
   static Widget _chipWrap(
     List<String> labels,
     Set<String> set,
@@ -717,34 +759,8 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
               ],
             ),
           ),
-          _todayRecommendationEntry(theme),
-          // 横向类别 Chip：高度须容纳中文字体行高；过小会出现「有时只剩半字」
-          SizedBox(
-            height: 56,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-              itemCount: _chipCategories.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(width: AppTheme.spaceXs),
-              itemBuilder: (context, i) {
-                final c = _chipCategories[i];
-                final selected = _quickCategory == c;
-                return Center(
-                  child: ChoiceChip(
-                    label: AppTheme.filterChipLabel(c),
-                    selected: selected,
-                    onSelected: (_) {
-                      setState(() => _quickCategory = c);
-                      _load();
-                    },
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.standard,
-                  ),
-                );
-              },
-            ),
-          ),
+          if (!kIsWeb) _todayRecommendationEntry(theme),
+          _categoryChipStrip(theme),
           const SizedBox(height: AppTheme.spaceXs),
           Expanded(child: _buildBody(theme)),
         ],
