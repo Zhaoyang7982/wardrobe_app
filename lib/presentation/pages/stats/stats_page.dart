@@ -309,21 +309,22 @@ class _StatsPageState extends ConsumerState<StatsPage> {
     );
   }
 
-  /// 利用率条：浅色填充（降低主色饱和度、提高明度），与统计页整体柔和风格一致
+  /// 利用率条填充：比旧版略深，与浅色轨道对比更清晰（仍沿用主色色相）
   Color _wearRankBarFill(ThemeData theme) {
     final p = theme.colorScheme.primary;
     final isDark = theme.brightness == Brightness.dark;
     final hsl = HSLColor.fromColor(p);
     return hsl
-        .withSaturation((hsl.saturation * 0.5).clamp(0.18, 0.42))
-        .withLightness(isDark ? 0.58 : 0.80)
+        .withSaturation((hsl.saturation * 0.62).clamp(0.22, 0.52))
+        .withLightness(isDark ? 0.52 : 0.62)
         .toColor();
   }
 
   Color _wearRankBarTrack(ThemeData theme) {
+    final cs = theme.colorScheme;
     return Color.alphaBlend(
-      theme.colorScheme.primary.withValues(alpha: 0.08),
-      theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.85),
+      cs.outline.withValues(alpha: 0.18),
+      cs.surfaceContainerHighest,
     );
   }
 
@@ -360,19 +361,27 @@ class _StatsPageState extends ConsumerState<StatsPage> {
                         child: Text(
                           '$rank',
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.outline,
-                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       Expanded(
-                        child: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          c.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                       Text(
                         '$wears 次',
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.outline,
-                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -382,7 +391,7 @@ class _StatsPageState extends ConsumerState<StatsPage> {
                     borderRadius: BorderRadius.circular(barRadius),
                     child: LinearProgressIndicator(
                       value: wears / maxC,
-                      minHeight: 9,
+                      minHeight: 10,
                       color: barFill,
                       backgroundColor: barTrack,
                     ),
