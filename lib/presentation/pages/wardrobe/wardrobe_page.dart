@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/share/save_file_helper.dart';
 import '../../../core/share/share_bytes_helper.dart';
@@ -783,32 +784,48 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
     if (_items.isEmpty) {
       return _buildEmpty(theme);
     }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: GridView.builder(
-        padding: const EdgeInsets.fromLTRB(
-          AppTheme.spaceMd,
-          0,
-          AppTheme.spaceMd,
-          88,
-        ),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: AppTheme.spaceMd,
-          crossAxisSpacing: AppTheme.spaceMd,
-          childAspectRatio: 0.72,
-        ),
-        itemCount: _items.length,
-        itemBuilder: (context, index) {
-          final c = _items[index];
-          return _WardrobeItemCard(
-            clothing: c,
-            colorSwatches: _colorSwatches,
-            onTap: () => context.push(AppRoutePaths.clothingDetail(c.id)),
-          );
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final (crossCount, aspect) = _wardrobeGridMetrics(constraints.maxWidth);
+        return RefreshIndicator(
+          onRefresh: _load,
+          child: GridView.builder(
+            padding: const EdgeInsets.fromLTRB(
+              AppTheme.spaceMd,
+              0,
+              AppTheme.spaceMd,
+              88,
+            ),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossCount,
+              mainAxisSpacing: AppTheme.spaceMd,
+              crossAxisSpacing: AppTheme.spaceMd,
+              childAspectRatio: aspect,
+            ),
+            itemCount: _items.length,
+            itemBuilder: (context, index) {
+              final c = _items[index];
+              return _WardrobeItemCard(
+                clothing: c,
+                colorSwatches: _colorSwatches,
+                onTap: () => context.push(AppRoutePaths.clothingDetail(c.id)),
+              );
+            },
+          ),
+        );
+      },
     );
+  }
+
+  /// 与 [AppConstants.layoutDesktopMinWidth] / [AppConstants.layoutTabletMinWidth] 一致
+  (int, double) _wardrobeGridMetrics(double width) {
+    if (width >= AppConstants.layoutDesktopMinWidth) {
+      return (4, 0.70);
+    }
+    if (width >= AppConstants.layoutTabletMinWidth) {
+      return (3, 0.71);
+    }
+    return (2, 0.72);
   }
 
   Widget _buildEmpty(ThemeData theme) {

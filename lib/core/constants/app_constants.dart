@@ -22,4 +22,10 @@ abstract final class AppConstants {
 
   /// 可点击区域最小尺寸（Material 建议）
   static const double minTouchTarget = 48;
+
+  /// 宽屏布局：窗口宽度 ≥ 此值时使用左侧导航 Rail（与衣橱四列对齐）
+  static const double layoutDesktopMinWidth = 900;
+
+  /// 中等宽度：衣橱网格 ≥ 此值且 < [layoutDesktopMinWidth] 时为 3 列
+  static const double layoutTabletMinWidth = 600;
 }
