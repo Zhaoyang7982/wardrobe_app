@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/repository_providers.dart';
@@ -21,6 +22,17 @@ class OutfitPage extends ConsumerStatefulWidget {
 class _OutfitPageState extends ConsumerState<OutfitPage> {
   static const _occasionFilters = ['全部', '日常', '工作', '运动', '正式', '约会', '旅行'];
   static const _seasonFilters = ['全部', '春', '夏', '秋', '冬'];
+
+  /// 与衣橱网格断点一致：宽屏四列便于浏览
+  static int _outfitCrossAxisCount(double width) {
+    if (width >= AppConstants.layoutDesktopMinWidth) {
+      return 4;
+    }
+    if (width >= AppConstants.layoutTabletMinWidth) {
+      return 3;
+    }
+    return 2;
+  }
 
   List<Outfit> _outfits = [];
   Map<String, Clothing> _clothingById = {};
@@ -423,40 +435,46 @@ class _OutfitPageState extends ConsumerState<OutfitPage> {
                               ],
                             ),
                           )
-                        : RefreshIndicator(
-                            onRefresh: _reload,
-                            child: MasonryGridView.count(
-                              padding: const EdgeInsets.fromLTRB(
-                                AppTheme.spaceMd,
-                                AppTheme.spaceSm,
-                                AppTheme.spaceMd,
-                                88,
-                              ),
-                              crossAxisCount: 2,
-                              mainAxisSpacing: AppTheme.spaceMd,
-                              crossAxisSpacing: AppTheme.spaceMd,
-                              itemCount: filtered.length,
-                              itemBuilder: (context, index) {
-                                final o = filtered[index];
-                                return _OutfitWaterfallCard(
-                                  outfit: o,
-                                  clothingById: _clothingById,
-                                  selectMode: _selectMode,
-                                  selected: _selectedIds.contains(o.id),
-                                  onTap: () async {
-                                    if (_selectMode) {
-                                      _toggleSelect(o.id);
-                                    } else {
-                                      await context.push(AppRoutePaths.outfitDetail(o.id));
-                                      if (mounted) {
-                                        await _reload();
-                                      }
-                                    }
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              final cross = _OutfitPageState._outfitCrossAxisCount(constraints.maxWidth);
+                              final gap = cross >= 4 ? AppTheme.spaceLg : AppTheme.spaceMd;
+                              return RefreshIndicator(
+                                onRefresh: _reload,
+                                child: MasonryGridView.count(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    AppTheme.spaceMd,
+                                    AppTheme.spaceSm,
+                                    AppTheme.spaceMd,
+                                    88,
+                                  ),
+                                  crossAxisCount: cross,
+                                  mainAxisSpacing: gap,
+                                  crossAxisSpacing: gap,
+                                  itemCount: filtered.length,
+                                  itemBuilder: (context, index) {
+                                    final o = filtered[index];
+                                    return _OutfitWaterfallCard(
+                                      outfit: o,
+                                      clothingById: _clothingById,
+                                      selectMode: _selectMode,
+                                      selected: _selectedIds.contains(o.id),
+                                      onTap: () async {
+                                        if (_selectMode) {
+                                          _toggleSelect(o.id);
+                                        } else {
+                                          await context.push(AppRoutePaths.outfitDetail(o.id));
+                                          if (mounted) {
+                                            await _reload();
+                                          }
+                                        }
+                                      },
+                                      onLongPress: () => _onItemLongPress(o.id),
+                                    );
                                   },
-                                  onLongPress: () => _onItemLongPress(o.id),
-                                );
-                              },
-                            ),
+                                ),
+                              );
+                            },
                           ),
           ),
         ],
@@ -619,10 +637,16 @@ class _OutfitWaterfallCard extends StatelessWidget {
 
     return Material(
       color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      elevation: 4,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.28),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
+        ),
+      ),
       clipBehavior: Clip.antiAlias,
-      elevation: 0.5,
-      shadowColor: theme.shadowColor.withValues(alpha: 0.12),
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
