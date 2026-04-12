@@ -28,4 +28,15 @@ abstract final class AppConstants {
 
   /// 中等宽度：衣橱网格 ≥ 此值且 < [layoutDesktopMinWidth] 时为 3 列
   static const double layoutTabletMinWidth = 600;
+
+  /// 搭配列表、今日推荐等与衣橱断点一致的响应式列数（窄 2 / 中 3 / 宽 4）。
+  static int outfitGridCrossAxisCount(double width) {
+    if (width >= layoutDesktopMinWidth) {
+      return 4;
+    }
+    if (width >= layoutTabletMinWidth) {
+      return 3;
+    }
+    return 2;
+  }
 }

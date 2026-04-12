@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/repository_providers.dart';
@@ -16,7 +17,7 @@ import 'outfit_clothing_collage.dart';
 ///
 /// [compactMargins] 为 true 时用于独立页，由外层 [Padding] 控制水平边距。
 ///
-/// [useMasonryGrid] 为 true 时使用与「搭配」页一致的双列瀑布流纵向排布。
+/// [useMasonryGrid] 为 true 时使用与「搭配」页一致的瀑布流列数（2/3/4）与间距。
 class TodayRecommendationSection extends ConsumerWidget {
   const TodayRecommendationSection({
     super.key,
@@ -152,15 +153,21 @@ class _TodayRecommendationCard extends StatelessWidget {
                 ),
               )
             else if (useMasonryGrid)
-              MasonryGridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: AppTheme.spaceMd,
-                crossAxisSpacing: AppTheme.spaceMd,
-                itemCount: result.outfits.length,
-                itemBuilder: (context, i) {
-                  return RecommendedOutfitBundleTile(bundle: result.outfits[i]);
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cross = AppConstants.outfitGridCrossAxisCount(constraints.maxWidth);
+                  final gap = cross >= 4 ? AppTheme.spaceLg : AppTheme.spaceMd;
+                  return MasonryGridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: cross,
+                    mainAxisSpacing: gap,
+                    crossAxisSpacing: gap,
+                    itemCount: result.outfits.length,
+                    itemBuilder: (context, i) {
+                      return RecommendedOutfitBundleTile(bundle: result.outfits[i]);
+                    },
+                  );
                 },
               )
             else

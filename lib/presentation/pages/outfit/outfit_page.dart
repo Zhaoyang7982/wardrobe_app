@@ -23,17 +23,6 @@ class _OutfitPageState extends ConsumerState<OutfitPage> {
   static const _occasionFilters = ['全部', '日常', '工作', '运动', '正式', '约会', '旅行'];
   static const _seasonFilters = ['全部', '春', '夏', '秋', '冬'];
 
-  /// 与衣橱网格断点一致：宽屏四列便于浏览
-  static int _outfitCrossAxisCount(double width) {
-    if (width >= AppConstants.layoutDesktopMinWidth) {
-      return 4;
-    }
-    if (width >= AppConstants.layoutTabletMinWidth) {
-      return 3;
-    }
-    return 2;
-  }
-
   List<Outfit> _outfits = [];
   Map<String, Clothing> _clothingById = {};
   bool _loading = true;
@@ -437,7 +426,7 @@ class _OutfitPageState extends ConsumerState<OutfitPage> {
                           )
                         : LayoutBuilder(
                             builder: (context, constraints) {
-                              final cross = _OutfitPageState._outfitCrossAxisCount(constraints.maxWidth);
+                              final cross = AppConstants.outfitGridCrossAxisCount(constraints.maxWidth);
                               final gap = cross >= 4 ? AppTheme.spaceLg : AppTheme.spaceMd;
                               return RefreshIndicator(
                                 onRefresh: _reload,

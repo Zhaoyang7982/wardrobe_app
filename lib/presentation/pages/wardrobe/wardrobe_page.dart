@@ -742,7 +742,7 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
               AppTheme.spaceMd,
               AppTheme.spaceSm,
               AppTheme.spaceMd,
-              AppTheme.spaceXs,
+              AppTheme.spaceMd,
             ),
             child: SearchBar(
               controller: _searchController,
@@ -759,6 +759,7 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
               ],
             ),
           ),
+          if (kIsWeb) const SizedBox(height: AppTheme.spaceSm),
           if (!kIsWeb) _todayRecommendationEntry(theme),
           _categoryChipStrip(theme),
           const SizedBox(height: AppTheme.spaceXs),
