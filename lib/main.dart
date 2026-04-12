@@ -1,23 +1,86 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+import 'core/constants/app_constants.dart';
+import 'core/notifications/calendar_notifications_bootstrap.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/accent_color_provider.dart';
+import 'core/theme/app_theme.dart';
+import 'data/supabase/supabase_bootstrap_state.dart';
+import 'data/supabase/supabase_env.dart';
+import 'presentation/widgets/wardrobe_sync_listener.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await _loadEnv();
+  await _tryInitSupabase();
+  await bootstrapCalendarNotifications();
   runApp(const ProviderScope(child: WardrobeApp()));
 }
 
-class WardrobeApp extends StatelessWidget {
+Future<void> _tryInitSupabase() async {
+  supabaseCloudEnabled = false;
+  if (!SupabaseEnv.isConfigured) {
+    return;
+  }
+  try {
+    await Supabase.initialize(
+      url: SupabaseEnv.url,
+      anonKey: SupabaseEnv.anonKey,
+    );
+    supabaseCloudEnabled = true;
+  } catch (e, st) {
+    debugPrint('Supabase 初始化失败，将使用本地仓储: $e\n$st');
+    supabaseCloudEnabled = false;
+  }
+}
+
+/// 优先加载 [assets/env/app.env]（本地密钥，勿提交）；不存在则用模板 [app.env.example]
+Future<void> _loadEnv() async {
+  try {
+    await dotenv.load(fileName: 'assets/env/app.env');
+  } catch (_) {
+    await dotenv.load(fileName: 'assets/env/app.env.example');
+  }
+}
+
+class WardrobeApp extends ConsumerWidget {
   const WardrobeApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '衣橱',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const Scaffold(
-        body: Center(child: Text('衣橱')),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accentArgb = ref.watch(accentColorArgbProvider);
+    final lightTheme = accentArgb.when(
+      data: (argb) => AppTheme.lightWithSeed(Color(argb)),
+      loading: () => AppTheme.light,
+      error: (e, _) => AppTheme.light,
+    );
+    final darkTheme = accentArgb.when(
+      data: (argb) => AppTheme.darkWithSeed(Color(argb)),
+      loading: () => AppTheme.dark,
+      error: (e, _) => AppTheme.dark,
+    );
+
+    return WardrobeSyncListener(
+      child: MaterialApp.router(
+        title: AppConstants.appTitleShort,
+        theme: lightTheme,
+        darkTheme: darkTheme,
+        themeMode: ThemeMode.system,
+        routerConfig: AppRouter.router,
+        locale: const Locale('zh', 'CN'),
+        supportedLocales: const [
+          Locale('zh', 'CN'),
+          Locale('en', 'US'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
       ),
     );
   }

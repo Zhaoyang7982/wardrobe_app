@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/build/
+
+# 环境变量与密钥（切勿提交）
+.env
+.env.*
+!.env.example
+**/app.env
+assets/env/app.env

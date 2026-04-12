@@ -1,28 +1,49 @@
 ---
-description: 衣橱 Flutter 项目架构与协作约定
+description: AI衣橱助手 — 技术栈、架构、代码规范与领域模型
 globs: lib/**/*.dart
 ---
 
-# 项目约定
+# AI衣橱助手
 
-## 分层（Clean Architecture）
+## 项目信息
 
-- **core**：与应用业务无关的基础设施——常量、主题、`go_router` 路由表、通用工具；不依赖 `data` / `domain` / `presentation` 中的业务实现。
-- **domain**：纯 Dart——实体/值对象（`models`）、仓储抽象接口（`repositories`）、用例（`usecases`）；禁止依赖 Flutter、`data` 具体实现。
-- **data**：`local`（Isar 等）、`remote`（Dio、Supabase）、`repositories`（实现 domain 仓储接口）；可依赖 `domain`，不直接依赖 UI。
-- **presentation**：`pages`、`widgets`、`providers`（Riverpod）；通过用例或仓储抽象访问领域，避免在 Widget 中写复杂数据逻辑。
+- **项目名称**：AI衣橱助手
+- **技术栈**：Flutter、Riverpod、GoRouter、Isar、Supabase（HTTP 等补充能力可用 Dio，与现有依赖一致即可）
 
-## 状态与路由
+## 架构：Clean Architecture 三层分离
 
-- 全局与跨页状态优先 **Riverpod**（`@riverpod` / `riverpod_annotation` 时配合代码生成工具使用）。
-- 导航统一经 **go_router** 配置（建议放在 `lib/core/router/`），避免在业务层散落 `Navigator.push` 字符串路由。
+按职责分为 **表示层 / 领域层 / 数据层**，与仓库目录对应关系如下：
 
-## 数据与后端
+| 层级 | 职责 | 代码位置 |
+|------|------|----------|
+| **表示层** | UI、页面组合、Riverpod 状态 | `lib/presentation/`（`pages`、`widgets`、`providers`） |
+| **领域层** | 实体、仓储抽象、用例，不依赖 Flutter 与具体数据源 | `lib/domain/`（`models`、`repositories`、`usecases`） |
+| **数据层** | Isar 本地、Supabase/Dio 远程、仓储实现 | `lib/data/`（`local`、`remote`、`repositories`） |
 
-- 本地持久化：**Isar**；远程与认证：**Supabase**；HTTP：**Dio**。
-- 图表：**fl_chart**；图片：选图 **image_picker**，网络图 **cached_network_image**，编辑 **flutter_image_editor**（按需在具体功能模块封装）。
+- **core**（`lib/core/`）：主题、路由表、常量、工具等横切能力；不承载具体业务用例实现。
+- 表示层通过用例或仓储抽象访问领域；数据层实现领域层定义的仓储接口；**禁止**领域层依赖 `presentation` / `data` 的具体实现。
+- 路由统一由 **GoRouter** 配置（建议集中在 `lib/core/router/`）；状态以 **Riverpod** 为主。
 
-## 代码风格
+## 代码规范
 
-- 新增文件放入对应分层目录；保持 import 顺序为 Dart SDK → package → 相对路径。
-- UI 与数据解耦：页面组合 widgets，复杂逻辑下沉到 provider / usecase。
+- **注释**：所有注释使用**中文**。
+- **文件名**：使用 **snake_case**（如 `clothing_card.dart`）。
+- **类名 / 类型名**：使用 **PascalCase**（如 `Clothing`、`UserProfile`）。
+- **import 顺序**：Dart SDK → 第三方 package → 相对路径。
+- 新增代码放入对应分层目录；复杂逻辑放在 provider / 用例，避免在 Widget 中堆叠数据与业务规则。
+
+## 数据模型（领域字段约定）
+
+以下字段为产品语义约定；实现时类型（如 `DateTime`、`List<String>`、金额用 `int` 分或 `Decimal` 等）在 `domain/models` 中具体定义，并与 Isar / Supabase 映射保持一致。
+
+### Clothing（单品）
+
+`id`，`name`，`category`，`colors`，`brand`，`size`，`imageUrl`，`croppedImageUrl`，`tags`，`season`，`occasion`，`style`，`purchaseDate`，`purchasePrice`，`status`，`usageCount`，`lastWornDate`，`notes`
+
+### Outfit（搭配）
+
+`id`，`name`，`clothingIds`，`scene`，`occasion`，`season`，`imageUrl`，`wornDates`，`plannedDates`，`notes`，`isShared`
+
+### UserProfile（用户档案）
+
+`styles`，`bodyType`，`height`，`weight`，`favoriteColors`，`favoriteOccasions`

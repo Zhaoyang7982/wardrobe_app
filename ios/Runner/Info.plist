@@ -66,5 +66,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>用于获取您附近的大概天气，以便在「今日推荐」中结合气温给出穿搭参考。</string>
 </dict>
 </plist>
