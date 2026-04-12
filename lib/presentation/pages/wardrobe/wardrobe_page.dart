@@ -543,44 +543,45 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
     );
   }
 
-  /// 横向类别：Chip 宽度随文案 intrinsic 变化，加大水平内边距与勾选与文字间距，避免挤在边框里。
+  /// 与搭配页 [_FilterBar] 一致：浅底分组 + 「类别」标题 + 横向 [FilterChip]（避免 ChoiceChip 在横向无限宽下压扁文案）。
   Widget _categoryChipStrip(ThemeData theme) {
-    final stripHeight = kIsWeb ? 72.0 : 58.0;
-    final hPad = kIsWeb ? 18.0 : 16.0;
-    final vPad = kIsWeb ? 12.0 : 10.0;
-    final strip = SizedBox(
-      height: stripHeight,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-        itemCount: _chipCategories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: AppTheme.spaceSm),
-        itemBuilder: (context, i) {
-          final c = _chipCategories[i];
-          final selected = _quickCategory == c;
-          return Center(
-            child: ChoiceChip(
-              label: AppTheme.filterChipLabel(c),
-              selected: selected,
-              onSelected: (_) {
-                setState(() => _quickCategory = c);
-                _load();
-              },
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.standard,
+    return Material(
+      color: theme.colorScheme.surfaceContainerLow,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppTheme.spaceMd, AppTheme.spaceSm, AppTheme.spaceMd, 0),
+            child: Text('类别', style: theme.textTheme.labelLarge),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(
+              AppTheme.spaceMd,
+              AppTheme.spaceSm,
+              AppTheme.spaceMd,
+              AppTheme.spaceSm,
             ),
-          );
-        },
+            child: Row(
+              children: [
+                for (var i = 0; i < _chipCategories.length; i++) ...[
+                  if (i > 0) const SizedBox(width: AppTheme.spaceXs),
+                  FilterChip(
+                    label: AppTheme.filterChipLabel(_chipCategories[i]),
+                    selected: _quickCategory == _chipCategories[i],
+                    onSelected: (_) {
+                      setState(() => _quickCategory = _chipCategories[i]);
+                      _load();
+                    },
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.standard,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
-    );
-    return Theme(
-      data: theme.copyWith(
-        chipTheme: theme.chipTheme.copyWith(
-          padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
-          labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-        ),
-      ),
-      child: strip,
     );
   }
 
