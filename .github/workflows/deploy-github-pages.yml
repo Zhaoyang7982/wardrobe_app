@@ -32,10 +32,17 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # 在仓库 Settings -> Secrets and variables -> Actions 添加 SUPABASE_URL、SUPABASE_ANON_KEY
+      # 与本地 app.env 一致（anon key 可进前端）；未配置时 Web 不启用云端与登录跳转
       - name: Build web (base-href matches repo name)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           REPO="${GITHUB_REPOSITORY##*/}"
-          flutter build web --release --base-href="/${REPO}/"
+          flutter build web --release --base-href="/${REPO}/" \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 
       - name: SPA 404 (same as index.html)
         run: cp build/web/index.html build/web/404.html

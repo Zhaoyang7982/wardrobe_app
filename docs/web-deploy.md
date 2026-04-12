@@ -24,12 +24,13 @@ flutter build web --release --base-href=/wardrobe_app/
 仓库顶栏 **「服务」** 里一般是 **第三方集成**（Sonar、腾讯云托管等），**不是**以前的「Gitee Pages 静态站」。  
 近年 Gitee 对 **普通用户 / 新仓库** 的 **Gitee Pages 已下线或收紧**，所以很多人 **菜单里根本没有「Gitee Pages」**，这不是你点错了。
 
-**结论**：静态网页请改用下面之一部署 **`build/web`**（或脚本生成的 **`wardrobe_app-web.zip`**）：
+**结论**：静态网页请改用下面之一部署 **`build/web`**（或脚本生成的 zip）：
 
+- **免费、推荐**：**GitHub Pages**（见本文 **§3**，含 **GitHub Actions 一键发布**）。  
 - **国内常用**：**腾讯云 COS「静态网站」**（见本文 §4）、阿里云 OSS 静态页等。  
-- **国外常用**：**GitHub Pages**、Cloudflare Pages、Netlify（把 `build/web` 或 zip 传上去即可）。
+- **其他**：Cloudflare Pages、Netlify（把 `build/web` 或 zip 传上去即可）。
 
-下面脚本仍可用于 **带 `/wardrobe_app/` 子路径** 的构建（例如将来镜像到 GitHub `username.github.io/wardrobe_app`）；若你部署在 **域名根路径**，请改用 §1 里无 `--base-href` 的构建命令。
+Gitee 脚本生成的 **`wardrobe_app-web.zip`** 与 **GitHub 项目站** 子路径规则相同（均为 `/<仓库名>/`）；若 GitHub 仓库名不是 `wardrobe_app`，请用 **§3** 里的本地脚本参数或改仓库名以与 `--base-href` 一致。若部署在 **域名根路径**，请改用 §1 里无 `--base-href` 的构建命令。
 
 ### 1.2 一键构建 + zip（原 Gitee Pages 脚本，仍可用）
 
@@ -88,33 +89,63 @@ server {
 
 ## 3. GitHub Pages
 
-### 方案 A：项目页 `https://<user>.github.io/<repo>/`
+### 方案 A（推荐）：GitHub Actions 自动发布
 
-1. 构建（注意 base 与仓库名一致）：
+本仓库已包含工作流 **`.github/workflows/deploy-github-pages.yml`**：在 **`main` 或 `master`** 推送时构建 Web、生成 **`404.html`**，并发布到 **GitHub Pages**。
+
+**首次启用（只需一次）**
+
+1. 在 GitHub 上 **新建仓库**（例如 `wardrobe_app`），把本机代码 **push** 上去（可与 Gitee 并存：再加一个 `origin` 或 `github` 远程即可）。
+2. 打开仓库 **Settings → Pages**。
+3. 在 **Build and deployment** 里，**Source** 选 **GitHub Actions**（不要选手动分支除非你走方案 C）。
+4. 再 **push 一次**（或 **Actions** 里手动 **Run workflow**），等待 **Deploy Web to GitHub Pages** 跑绿。
+5. 站点地址一般为：**`https://<你的 GitHub 用户名>.github.io/<仓库名>/`**（仓库名必须与构建时的 `--base-href` 一致；工作流里用 `GITHUB_REPOSITORY` 自动取仓库名，无需手改）。
+
+**Supabase**：把上述 **完整 https 地址**（含末尾路径）写入 **Authentication → URL Configuration** 的 **Site URL / Redirect URLs**。
+
+**GitHub Actions 与 Supabase**：在仓库 **Settings → Secrets and variables → Actions** 中新增 **`SUPABASE_URL`**、**`SUPABASE_ANON_KEY`**（与本地 `app.env` 相同即可）。工作流会在 **`flutter build web`** 时通过 **`--dart-define`** 注入；未配置时线上站点不会启用云端，也不会进入登录页（与本地缺省 `app.env` 行为一致）。
+
+**Web 中文显示**：线上构建已使用 **Noto Sans SC**（`google_fonts`，运行时从 **fonts.gstatic.com** 拉取）。若你所在网络无法访问该域名，中文可能仍显示异常，需自备网络或后续改为把字体打进 `assets`（体积较大）。
+
+### 方案 B：项目页手动构建 `https://<user>.github.io/<repo>/`
+
+1. 构建（**`repo` 必须与 GitHub 仓库名一致**）：
 
    ```bash
    flutter build web --release --base-href=/<repo>/
    ```
 
-2. **GitHub Pages 对 SPA 的惯例**：把 `index.html` 再复制一份为 **`404.html`**（未知路径会返回 404 页，复制后仍加载同一套 Flutter，由前端路由接管）：
+2. **SPA**：将 `index.html` 复制为 **`404.html`**：
 
    ```powershell
    .\scripts\copy_web_spa_404.ps1
    ```
 
-3. 将 **`build/web/`** 全部内容推到 `gh-pages` 分支，或在 Actions 里 `actions/upload-pages-artifact` 上传该目录。
+3. 将 **`build/web/`** 全部内容提交到 **`gh-pages` 分支根目录**，或使用其它静态托管上传该目录。
 
-4. 仓库 **Settings → Pages**：Source 选对应分支/目录（常为 `/ (root)`）。
+4. 若用 **分支托管**：**Settings → Pages** 里 Source 选 **`gh-pages`** 分支、`/ (root)`。
 
-### 方案 B：用户/组织页根域名
+本地一键（默认仓库名 `wardrobe_app`，可传参覆盖）：
 
-若站点在仓库根 `https://<user>.github.io/`（无子路径），使用：
+```text
+scripts\build_web_github_pages.cmd
+```
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_web_github_pages.ps1 my_repo_name
+```
+
+需要 zip 时加 **`-Zip`**，会在仓库根生成 **`wardrobe_app-github-pages.zip`**（已加入 `.gitignore`）。
+
+### 方案 C：用户/组织页根域名
+
+若站点在 **`https://<user>.github.io/`**（仓库名为 `<user>.github.io` 且站点在根路径），**不要**加子路径 base：
 
 ```bash
 flutter build web --release
 ```
 
-再执行 `copy_web_spa_404.ps1` 后上传 `build/web/`。
+再执行 `copy_web_spa_404.ps1` 后上传 `build/web/`。此场景与本工作流中的「按仓库名自动 base」不一致，需另写工作流或改 `flutter build` 参数。
 
 ## 4. 腾讯云 COS「静态网站」
 
@@ -135,5 +166,6 @@ flutter build web --release
 
 ## 7. 可选脚本
 
-- **`scripts/build_web_gitee_pages.ps1`**：针对本仓库 Gitee Pages 的 **一键构建 + 404 + zip**（见 §1.1）。  
+- **`scripts/build_web_github_pages.ps1`** / **`.cmd`**：GitHub **项目站** 子路径 **一键构建 + 404**；可选 **`-Zip`**（见 §3）。  
+- **`scripts/build_web_gitee_pages.ps1`**：历史 Gitee 子路径 **`/wardrobe_app/`** 的 **一键构建 + 404 + zip**（见 §1.2）。  
 - **`scripts/copy_web_spa_404.ps1`**：仅复制 `404.html`；GitHub Pages / 自建 Nginx 也可用。
