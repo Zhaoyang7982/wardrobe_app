@@ -543,16 +543,18 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
     );
   }
 
-  /// Web：加高 Chip 行并加大 [ChipTheme] 内边距，减轻 CanvasKit + Noto 下文字被裁切
+  /// 横向类别：Chip 宽度随文案 intrinsic 变化，加大水平内边距与勾选与文字间距，避免挤在边框里。
   Widget _categoryChipStrip(ThemeData theme) {
-    final stripHeight = kIsWeb ? 72.0 : 56.0;
+    final stripHeight = kIsWeb ? 72.0 : 58.0;
+    final hPad = kIsWeb ? 18.0 : 16.0;
+    final vPad = kIsWeb ? 12.0 : 10.0;
     final strip = SizedBox(
       height: stripHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
         itemCount: _chipCategories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: AppTheme.spaceXs),
+        separatorBuilder: (context, index) => const SizedBox(width: AppTheme.spaceSm),
         itemBuilder: (context, i) {
           final c = _chipCategories[i];
           final selected = _quickCategory == c;
@@ -571,13 +573,11 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
         },
       ),
     );
-    if (!kIsWeb) {
-      return strip;
-    }
     return Theme(
       data: theme.copyWith(
         chipTheme: theme.chipTheme.copyWith(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 6),
         ),
       ),
       child: strip,

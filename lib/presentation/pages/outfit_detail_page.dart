@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/router/app_router.dart';
 import '../../core/share/load_image_bytes.dart';
 import '../../core/share/outfit_share_render.dart';
@@ -150,129 +152,206 @@ class _OutfitDetailPageState extends ConsumerState<OutfitDetailPage> {
                 )
               : _outfit == null
                   ? const Center(child: Text('未找到该搭配'))
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(AppTheme.spaceMd),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (_outfit!.isArchived) ...[
-                              Material(
-                                color: theme.colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(AppTheme.spaceSm),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Text(
-                                        '该搭配在回收站中：已从「搭配」列表移除，日历与穿着记录仍保留。'
-                                        '也可在「我的 → 搭配回收站」中恢复或彻底删除。',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSecondaryContainer,
-                                        ),
-                                      ),
-                                      const SizedBox(height: AppTheme.spaceSm),
-                                      FilledButton.tonal(
-                                        onPressed: _restoreToList,
-                                        child: const Text('恢复至搭配列表'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: AppTheme.spaceMd),
-                            ],
-                            AspectRatio(
-                              aspectRatio: 1,
-                              child: Material(
-                                color: const Color(0xFFE8E4DD),
-                                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                clipBehavior: Clip.antiAlias,
-                                child: OutfitClothingCollage(
-                                  clothingIds: _outfit!.clothingIds,
-                                  clothingById: _clothingById,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: AppTheme.spaceMd),
-                            Text(
-                              _outfit!.name,
-                              style: theme.textTheme.headlineSmall,
-                            ),
-                            if (_outfit!.occasion != null && _outfit!.occasion!.isNotEmpty) ...[
-                              const SizedBox(height: AppTheme.spaceSm),
-                              Wrap(
-                                spacing: AppTheme.spaceXs,
-                                children: [
-                                  Chip(
-                                    label: Text(_outfit!.occasion!),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                ],
-                              ),
-                            ],
-                            if (_outfit!.season != null && _outfit!.season!.isNotEmpty) ...[
-                              const SizedBox(height: AppTheme.spaceXs),
-                              Text('季节：${_outfit!.season}', style: theme.textTheme.bodyMedium),
-                            ],
-                            if (_outfit!.notes != null && _outfit!.notes!.isNotEmpty) ...[
-                              const SizedBox(height: AppTheme.spaceMd),
-                              Text('备注', style: theme.textTheme.titleSmall),
-                              const SizedBox(height: AppTheme.spaceXs),
-                              Text(_outfit!.notes!, style: theme.textTheme.bodyMedium),
-                            ],
-                            const SizedBox(height: AppTheme.spaceLg),
-                            Text('包含衣物（${_outfit!.clothingIds.length}）', style: theme.textTheme.titleSmall),
-                            const SizedBox(height: AppTheme.spaceSm),
-                            ..._outfit!.clothingIds.map((id) {
-                              final c = _clothingById[id];
-                              final refUrl = c != null ? (c.croppedImageUrl ?? c.imageUrl) : null;
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: AppTheme.spaceSm),
-                                child: ListTile(
-                                  leading: SizedBox(
-                                    width: 48,
-                                    height: 48,
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                                      child: refUrl != null && refUrl.isNotEmpty
-                                          ? imageFromClothingRef(
-                                              refUrl,
-                                              fit: BoxFit.cover,
-                                              placeholder: Icon(Icons.checkroom_outlined, color: theme.colorScheme.outline),
-                                              errorBuilder: (ctx, e, s) =>
-                                                  Icon(Icons.checkroom_outlined, color: theme.colorScheme.outline),
-                                            )
-                                          : Icon(Icons.checkroom_outlined, color: theme.colorScheme.outline),
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final wideWeb = kIsWeb &&
+                            constraints.maxWidth >= AppConstants.layoutDesktopMinWidth;
+                        if (wideWeb) {
+                          return RefreshIndicator(
+                            onRefresh: _load,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  flex: 11,
+                                  child: SingleChildScrollView(
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      AppTheme.spaceLg,
+                                      AppTheme.spaceMd,
+                                      AppTheme.spaceMd,
+                                      AppTheme.spaceLg,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        ..._archivedBannerWidgets(theme),
+                                        _collagePreview(),
+                                        const SizedBox(height: AppTheme.spaceMd),
+                                        ..._metadataWidgets(theme),
+                                      ],
                                     ),
                                   ),
-                                  title: Text(c?.name ?? '已删除的衣物 ($id)'),
-                                  subtitle: c != null ? Text(c.category) : null,
-                                  trailing: c != null ? const Icon(Icons.chevron_right) : null,
-                                  onTap: c != null
-                                      ? () => context.push(AppRoutePaths.clothingDetail(c.id))
-                                      : null,
                                 ),
-                              );
-                            }),
-                            if (_outfit!.wornDates.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: AppTheme.spaceMd),
-                                child: Text(
-                                  '穿着记录：${_outfit!.wornDates.length} 次',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.outline,
+                                const VerticalDivider(width: 1, thickness: 1),
+                                Expanded(
+                                  flex: 9,
+                                  child: SingleChildScrollView(
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      AppTheme.spaceMd,
+                                      AppTheme.spaceMd,
+                                      AppTheme.spaceLg,
+                                      AppTheme.spaceLg,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: _clothingListWidgets(theme),
+                                    ),
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                      ),
+                              ],
+                            ),
+                          );
+                        }
+                        return RefreshIndicator(
+                          onRefresh: _load,
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(AppTheme.spaceMd),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                ..._archivedBannerWidgets(theme),
+                                _collagePreview(),
+                                const SizedBox(height: AppTheme.spaceMd),
+                                ..._metadataWidgets(theme),
+                                const SizedBox(height: AppTheme.spaceLg),
+                                ..._clothingListWidgets(theme),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
     );
+  }
+
+  List<Widget> _archivedBannerWidgets(ThemeData theme) {
+    final o = _outfit;
+    if (o == null || !o.isArchived) {
+      return const [];
+    }
+    return [
+      Material(
+        color: theme.colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.spaceSm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '该搭配在回收站中：已从「搭配」列表移除，日历与穿着记录仍保留。'
+                '也可在「我的 → 搭配回收站」中恢复或彻底删除。',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+              ),
+              const SizedBox(height: AppTheme.spaceSm),
+              FilledButton.tonal(
+                onPressed: _restoreToList,
+                child: const Text('恢复至搭配列表'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: AppTheme.spaceMd),
+    ];
+  }
+
+  Widget _collagePreview() {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Material(
+        color: const Color(0xFFE8E4DD),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        clipBehavior: Clip.antiAlias,
+        child: OutfitClothingCollage(
+          clothingIds: _outfit!.clothingIds,
+          clothingById: _clothingById,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _metadataWidgets(ThemeData theme) {
+    final o = _outfit!;
+    return [
+      Text(o.name, style: theme.textTheme.headlineSmall),
+      if (o.occasion != null && o.occasion!.isNotEmpty) ...[
+        const SizedBox(height: AppTheme.spaceSm),
+        Wrap(
+          spacing: AppTheme.spaceXs,
+          children: [
+            Chip(
+              label: Text(o.occasion!),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      ],
+      if (o.season != null && o.season!.isNotEmpty) ...[
+        const SizedBox(height: AppTheme.spaceXs),
+        Text('季节：${o.season}', style: theme.textTheme.bodyMedium),
+      ],
+      if (o.notes != null && o.notes!.isNotEmpty) ...[
+        const SizedBox(height: AppTheme.spaceMd),
+        Text('备注', style: theme.textTheme.titleSmall),
+        const SizedBox(height: AppTheme.spaceXs),
+        Text(o.notes!, style: theme.textTheme.bodyMedium),
+      ],
+    ];
+  }
+
+  List<Widget> _clothingListWidgets(ThemeData theme) {
+    final o = _outfit!;
+    final tiles = o.clothingIds.map((id) {
+      final c = _clothingById[id];
+      final refUrl = c != null ? (c.croppedImageUrl ?? c.imageUrl) : null;
+      return Card(
+        margin: const EdgeInsets.only(bottom: AppTheme.spaceSm),
+        child: ListTile(
+          leading: SizedBox(
+            width: 48,
+            height: 48,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              child: refUrl != null && refUrl.isNotEmpty
+                  ? imageFromClothingRef(
+                      refUrl,
+                      fit: BoxFit.cover,
+                      placeholder: Icon(Icons.checkroom_outlined, color: theme.colorScheme.outline),
+                      errorBuilder: (ctx, e, s) =>
+                          Icon(Icons.checkroom_outlined, color: theme.colorScheme.outline),
+                    )
+                  : Icon(Icons.checkroom_outlined, color: theme.colorScheme.outline),
+            ),
+          ),
+          title: Text(c?.name ?? '已删除的衣物 ($id)'),
+          subtitle: c != null ? Text(c.category) : null,
+          trailing: c != null ? const Icon(Icons.chevron_right) : null,
+          onTap: c != null ? () => context.push(AppRoutePaths.clothingDetail(c.id)) : null,
+        ),
+      );
+    }).toList();
+
+    return [
+      Text('包含衣物（${o.clothingIds.length}）', style: theme.textTheme.titleSmall),
+      const SizedBox(height: AppTheme.spaceSm),
+      ...tiles,
+      if (o.wornDates.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: AppTheme.spaceMd),
+          child: Text(
+            '穿着记录：${o.wornDates.length} 次',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ),
+    ];
   }
 
   Future<void> _shareOutfitImage(BuildContext context) async {

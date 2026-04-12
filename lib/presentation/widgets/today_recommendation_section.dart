@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -105,7 +106,7 @@ class _TodayRecommendationCard extends StatelessWidget {
     final theme = Theme.of(context);
     final sourceLabel = result.primarySource == RecommendationPrimarySource.ai
         ? 'AI 推荐'
-        : '智能搭配';
+        : (kIsWeb ? '规则推荐' : '智能搭配');
 
     return Card(
       margin: margin,
@@ -189,9 +190,13 @@ class _TodayRecommendationCard extends StatelessWidget {
             if (result.dayContext != null && result.outfits.isNotEmpty) ...[
               const SizedBox(height: AppTheme.spaceMd),
               Text(
-                result.dayContext!.buildFriendlyIntro(
-                  outfitCount: result.outfits.length,
-                ),
+                kIsWeb && result.primarySource == RecommendationPrimarySource.rule
+                    ? result.dayContext!.buildWebRuleIntro(
+                        outfitCount: result.outfits.length,
+                      )
+                    : result.dayContext!.buildFriendlyIntro(
+                        outfitCount: result.outfits.length,
+                      ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   height: 1.45,
                   color: theme.colorScheme.onSurfaceVariant,

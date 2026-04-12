@@ -282,6 +282,9 @@ class OutfitRecommendationUseCase {
 
     /// 为 true 时不请求大模型（例如已达「每日一次免费」上限）。
     bool skipAiDueToDailyLimit = false,
+
+    /// 为 true 时不请求大模型（例如 Web 端固定使用本地规则推荐）。
+    bool skipAi = false,
   }) async {
     final clock = now ?? DateTime.now();
     final season = seasonForDate(clock);
@@ -304,7 +307,9 @@ class OutfitRecommendationUseCase {
       ),
     );
 
-    if (aiConfig.isComplete) {
+    if (skipAi) {
+      aiSkip = 'Web 端使用本地规则推荐';
+    } else if (aiConfig.isComplete) {
       if (skipAiDueToDailyLimit) {
         aiSkip = '今日免费 AI 已使用一次，已用本地规则搭配；明日 0 点（本地日期）起可再试';
       } else {

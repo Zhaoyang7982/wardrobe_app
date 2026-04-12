@@ -100,6 +100,24 @@ class RecommendationDayContext {
     return parts.join('\n');
   }
 
+  /// Web 端规则推荐用：简短中性说明，避免长段助手口吻（与 [buildFriendlyIntro] 二选一）。
+  String buildWebRuleIntro({required int outfitCount}) {
+    final parts = <String>[];
+    parts.add('$longDateLabel · $weekdayLabel。${_calendarSituationLine()}');
+    if (temperatureC != null && weatherDescription != null) {
+      final uiLoc = locationHintForUi;
+      parts.add(
+        '${uiLoc != null && uiLoc.isNotEmpty ? '「$uiLoc」' : ''}约 ${temperatureC!.round()}°C，$weatherDescription。',
+      );
+    } else if (weatherApiFailed) {
+      parts.add('天气信息暂不可用。');
+    } else {
+      parts.add('今日天气信息暂不可用。');
+    }
+    parts.add('已从衣橱「在穿」中按本地规则组合 $outfitCount 套搭配，点击卡片可查看所含衣物。');
+    return parts.join('\n');
+  }
+
   String _calendarSituationLine() {
     final name = holidayName?.trim();
     if (name != null && name.isNotEmpty && name.contains('补班')) {
