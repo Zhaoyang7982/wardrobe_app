@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/ai/ai_env.dart';
+import '../../data/local/daily_ai_recommendation_budget.dart';
 import '../../data/remote/recommendation_day_context_loader.dart';
 import '../../data/repositories/repository_providers.dart';
 import '../../domain/models/recommendation_day_context.dart';
@@ -20,6 +21,7 @@ final todayRecommendationProvider =
   } catch (_) {
     dayCtx = RecommendationDayContext.localFallback(DateTime.now());
   }
+  final dailyAiUsed = await DailyAiRecommendationBudget.isConsumedForToday();
   final useCase = OutfitRecommendationUseCase(
     loadAiConfig: loadAiClientConfig,
   );
@@ -27,6 +29,10 @@ final todayRecommendationProvider =
     clothes: clothes,
     outfits: outfits,
     dayContext: dayCtx,
+    skipAiDueToDailyLimit: dailyAiUsed,
   );
+  if (core.primarySource == RecommendationPrimarySource.ai) {
+    await DailyAiRecommendationBudget.markConsumedForToday();
+  }
   return core.copyWith(dayContext: dayCtx);
 });

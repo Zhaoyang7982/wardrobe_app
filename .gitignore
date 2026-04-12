@@ -51,3 +51,6 @@ app.*.map.json
 !.env.example
 **/app.env
 assets/env/app.env
+
+# Gitee Pages 本地打包产物（由 scripts/build_web_gitee_pages.ps1 生成）
+/wardrobe_app-web.zip

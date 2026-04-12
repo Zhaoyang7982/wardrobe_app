@@ -279,6 +279,9 @@ class OutfitRecommendationUseCase {
     UserProfile? profile,
     DateTime? now,
     RecommendationDayContext? dayContext,
+
+    /// 为 true 时不请求大模型（例如已达「每日一次免费」上限）。
+    bool skipAiDueToDailyLimit = false,
   }) async {
     final clock = now ?? DateTime.now();
     final season = seasonForDate(clock);
@@ -302,27 +305,31 @@ class OutfitRecommendationUseCase {
     );
 
     if (aiConfig.isComplete) {
-      try {
-        final aiBundles = await _fetchAiRecommendations(
-          config: aiConfig,
-          pool: pool,
-          seasonLabel: season,
-          profile: profile,
-          now: clock,
-          dayContext: dayContext,
-        ).timeout(const Duration(seconds: 14));
-        if (aiBundles != null && aiBundles.length == 4) {
-          return TodayRecommendationResult(
-            outfits: aiBundles,
+      if (skipAiDueToDailyLimit) {
+        aiSkip = '今日免费 AI 已使用一次，已用本地规则搭配；明日 0 点（本地日期）起可再试';
+      } else {
+        try {
+          final aiBundles = await _fetchAiRecommendations(
+            config: aiConfig,
+            pool: pool,
             seasonLabel: season,
-            primarySource: RecommendationPrimarySource.ai,
-          );
+            profile: profile,
+            now: clock,
+            dayContext: dayContext,
+          ).timeout(const Duration(seconds: 14));
+          if (aiBundles != null && aiBundles.length == 4) {
+            return TodayRecommendationResult(
+              outfits: aiBundles,
+              seasonLabel: season,
+              primarySource: RecommendationPrimarySource.ai,
+            );
+          }
+          aiSkip = 'AI 返回结果无效，已使用本地规则';
+        } on TimeoutException {
+          aiSkip = 'AI 响应超时，已使用本地规则';
+        } catch (_) {
+          aiSkip = 'AI 请求失败，已使用本地规则';
         }
-        aiSkip = 'AI 返回结果无效，已使用本地规则';
-      } on TimeoutException {
-        aiSkip = 'AI 响应超时，已使用本地规则';
-      } catch (_) {
-        aiSkip = 'AI 请求失败，已使用本地规则';
       }
     } else {
       aiSkip = '未配置 AI_API_KEY / AI_API_BASE_URL，已使用本地规则';

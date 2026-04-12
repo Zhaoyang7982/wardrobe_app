@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -70,15 +69,22 @@ Widget imageFromClothingRef(
     return img;
   }
   if (isNetworkImageUrl(url)) {
-    Widget img = CachedNetworkImage(
-      imageUrl: url,
+    // 不用 CachedNetworkImage：其依赖的 flutter_cache_manager → path_provider_android
+    // 在部分正式版上会 JNI 查找已移除的 io.flutter.util.PathUtils 导致 ClassNotFoundException。
+    Widget img = Image.network(
+      url,
       fit: fit,
       alignment: imageAlignment,
-      placeholder: (context, _) => placeholder,
-      errorWidget: (context, urlStr, error) {
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) {
+          return child;
+        }
+        return placeholder;
+      },
+      errorBuilder: (context, error, stackTrace) {
         final eb = errorBuilder;
         if (eb != null) {
-          return eb(context, error, null);
+          return eb(context, error, stackTrace);
         }
         return placeholder;
       },
