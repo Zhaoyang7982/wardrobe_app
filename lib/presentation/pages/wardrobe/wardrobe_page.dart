@@ -717,8 +717,9 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
             ),
           ),
           _todayRecommendationEntry(theme),
+          // 横向类别 Chip：高度须容纳中文字体行高；过小会出现「有时只剩半字」
           SizedBox(
-            height: 44,
+            height: 56,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),

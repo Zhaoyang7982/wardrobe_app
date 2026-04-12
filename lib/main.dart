@@ -27,6 +27,13 @@ ThemeData _themeWithWebCjkTextTheme(ThemeData theme) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    try {
+      await GoogleFonts.pendingFonts([GoogleFonts.notoSansSc()]);
+    } catch (e, st) {
+      debugPrint('Noto Sans SC preload skipped: $e\n$st');
+    }
+  }
   await _loadEnv();
   await _tryInitSupabase();
   await bootstrapCalendarNotifications();
