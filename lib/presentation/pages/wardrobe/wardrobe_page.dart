@@ -543,8 +543,15 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
     );
   }
 
-  /// 与搭配页 [_FilterBar] 一致：浅底分组 + 「类别」标题 + 横向 [FilterChip]（避免 ChoiceChip 在横向无限宽下压扁文案）。
+  /// Web：自定义胶囊按钮（避免 M3 Chip 在横向滚动下文案被压成单字）。移动端：与搭配页一致的 FilterChip。
   Widget _categoryChipStrip(ThemeData theme) {
+    if (kIsWeb) {
+      return _wardrobeCategoryStripWeb(theme);
+    }
+    return _wardrobeCategoryStripMobile(theme);
+  }
+
+  Widget _wardrobeCategoryStripMobile(ThemeData theme) {
     return Material(
       color: theme.colorScheme.surfaceContainerLow,
       child: Column(
@@ -575,6 +582,46 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
                     },
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.standard,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _wardrobeCategoryStripWeb(ThemeData theme) {
+    return Material(
+      color: theme.colorScheme.surfaceContainerLow,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppTheme.spaceMd, AppTheme.spaceSm, AppTheme.spaceMd, 0),
+            child: Text('类别', style: theme.textTheme.labelLarge),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(
+              AppTheme.spaceMd,
+              AppTheme.spaceSm,
+              AppTheme.spaceMd,
+              AppTheme.spaceSm,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < _chipCategories.length; i++) ...[
+                  if (i > 0) const SizedBox(width: AppTheme.spaceXs),
+                  _WardrobeWebCategoryPill(
+                    label: _chipCategories[i],
+                    selected: _quickCategory == _chipCategories[i],
+                    onTap: () {
+                      setState(() => _quickCategory = _chipCategories[i]);
+                      _load();
+                    },
                   ),
                 ],
               ],
@@ -891,6 +938,62 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Web 衣橱类别：不用 Chip 组件，布局仅 [Padding]+[Text]，规避 CanvasKit 下 Chip 文案异常变窄。
+class _WardrobeWebCategoryPill extends StatelessWidget {
+  const _WardrobeWebCategoryPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final fg = selected ? cs.onSecondaryContainer : cs.onSurface;
+    final bg = selected ? cs.secondaryContainer : cs.surface;
+    final border = selected ? cs.primary.withValues(alpha: 0.35) : cs.outline.withValues(alpha: 0.55);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXs),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(AppTheme.radiusXs),
+            border: Border.all(color: border, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (selected) ...[
+                Icon(Icons.check_rounded, size: 18, color: fg),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: AppTheme.fontSizeLabel,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  height: 1.35,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -66,7 +66,9 @@ class TodayRecommendationSection extends ConsumerWidget {
               const SizedBox(width: AppTheme.spaceMd),
               Expanded(
                 child: Text(
-                  '正在结合今日日期、节假日与天气生成推荐…',
+                  kIsWeb
+                      ? '正在结合今日日期、节假日与衣橱规则生成推荐…'
+                      : '正在结合今日日期、节假日与天气生成推荐…',
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
@@ -220,14 +222,18 @@ class _DayContextSummaryRow extends StatelessWidget {
     final theme = Theme.of(context);
     final workLabel = ctx.isWorkdayFromApi ? '工作日' : '休息日';
     final weatherBits = <String>[];
-    if (ctx.temperatureC != null && ctx.weatherDescription != null) {
-      weatherBits.add('约 ${ctx.temperatureC!.round()}°C · ${ctx.weatherDescription}');
-    } else if (ctx.weatherApiFailed) {
-      weatherBits.add('天气暂不可用');
-    }
-    final locUi = ctx.locationHintForUi;
-    if (locUi != null && locUi.isNotEmpty) {
-      weatherBits.add(locUi);
+    if (ctx.webWeatherSuppressed) {
+      weatherBits.add('未使用天气（Web 规则推荐）');
+    } else {
+      if (ctx.temperatureC != null && ctx.weatherDescription != null) {
+        weatherBits.add('约 ${ctx.temperatureC!.round()}°C · ${ctx.weatherDescription}');
+      } else if (ctx.weatherApiFailed) {
+        weatherBits.add('天气暂不可用');
+      }
+      final locUi = ctx.locationHintForUi;
+      if (locUi != null && locUi.isNotEmpty) {
+        weatherBits.add(locUi);
+      }
     }
 
     return Column(

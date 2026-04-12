@@ -25,13 +25,32 @@ class RecommendationDayContextLoader {
         '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
 
     final holidayFuture = _loadHoliday(local, dateStr);
-    final weatherFuture = _loadWeather();
-
     final holiday = await holidayFuture;
-    final weather = await weatherFuture;
 
     final weekend =
         local.weekday == DateTime.saturday || local.weekday == DateTime.sunday;
+
+    // Web 规则推荐不拉天气：浏览器无可靠定位时曾固定用北京示例，易与「本地规则」文案冲突。
+    if (kIsWeb) {
+      return RecommendationDayContext(
+        localDate: local,
+        longDateLabel: DateFormat('y年M月d日', 'zh_CN').format(local),
+        weekdayLabel: DateFormat('EEEE', 'zh_CN').format(local),
+        isWeekend: weekend,
+        isWorkdayFromApi: holiday.isWorkday,
+        holidayName: holiday.name,
+        temperatureC: null,
+        weatherDescription: null,
+        locationHint: null,
+        locationFromLastKnown: false,
+        locationFixTime: null,
+        holidayApiFailed: holiday.apiFailed,
+        weatherApiFailed: false,
+        webWeatherSuppressed: true,
+      );
+    }
+
+    final weather = await _loadWeather();
 
     return RecommendationDayContext(
       localDate: local,
@@ -47,6 +66,7 @@ class RecommendationDayContextLoader {
       locationFixTime: weather?.ok == true ? weather!.fixTime : null,
       holidayApiFailed: holiday.apiFailed,
       weatherApiFailed: weather == null || weather.ok != true,
+      webWeatherSuppressed: false,
     );
   }
 
@@ -105,15 +125,6 @@ class RecommendationDayContextLoader {
         bool fromLastKnown,
         DateTime? fixTime,
       })?> _loadWeather() async {
-    if (kIsWeb) {
-      return _openMeteoForecast(
-        39.9042,
-        116.4074,
-        '默认北京（Web 端）',
-        fromLastKnown: false,
-        fixTime: null,
-      );
-    }
     final resolved = await _resolveDeviceCoordinates();
     return _openMeteoForecast(
       resolved.lat,

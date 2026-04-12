@@ -19,6 +19,7 @@ class RecommendationDayContext {
     this.locationFixTime,
     this.holidayApiFailed = false,
     this.weatherApiFailed = false,
+    this.webWeatherSuppressed = false,
   });
 
   final DateTime localDate;
@@ -40,6 +41,9 @@ class RecommendationDayContext {
   final DateTime? locationFixTime;
   final bool holidayApiFailed;
   final bool weatherApiFailed;
+
+  /// Web 端规则推荐：不请求天气接口，避免展示「默认北京」等与「本地规则」语义冲突。
+  final bool webWeatherSuppressed;
 
   /// 列表与引导语用：在「缓存点 + 天气已成功」且时效可接受时改为「当前区域」，不提缓存。
   String? get locationHintForUi {
@@ -104,7 +108,9 @@ class RecommendationDayContext {
   String buildWebRuleIntro({required int outfitCount}) {
     final parts = <String>[];
     parts.add('$longDateLabel · $weekdayLabel。${_calendarSituationLine()}');
-    if (temperatureC != null && weatherDescription != null) {
+    if (webWeatherSuppressed) {
+      parts.add('Web 端不请求定位与天气，推荐仅依据衣橱「在穿」与本地规则。');
+    } else if (temperatureC != null && weatherDescription != null) {
       final uiLoc = locationHintForUi;
       parts.add(
         '${uiLoc != null && uiLoc.isNotEmpty ? '「$uiLoc」' : ''}约 ${temperatureC!.round()}°C，$weatherDescription。',
