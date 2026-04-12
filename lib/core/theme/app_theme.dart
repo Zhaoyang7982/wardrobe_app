@@ -15,19 +15,20 @@ abstract final class AppTheme {
   static const double fontSizeLabel = 12;
   static const double fontSizeLabelSmall = 11;
 
-  /// 横向筛选 Chip（搭配页场合/季节、衣橱页类别等）统一标签：字号与行高一致，单字与双字视觉对齐。
+  /// 横向筛选 Chip（搭配页场合/季节、衣橱页类别等）统一标签。
+  /// [forceStrutHeight] 必须为 false：Web 上 Noto 等中文字形高于强制 strut 时会被裁成「只剩一横」。
   static const StrutStyle filterChipStrutStyle = StrutStyle(
     fontSize: fontSizeLabel,
-    height: 1.25,
+    height: 1.35,
     leadingDistribution: TextLeadingDistribution.even,
-    forceStrutHeight: true,
+    forceStrutHeight: false,
   );
 
   /// 不指定 [TextStyle.color]，便于选中态由 Chip 继承主题强调色。
   static const TextStyle filterChipLabelTextStyle = TextStyle(
     fontSize: fontSizeLabel,
     fontWeight: FontWeight.w500,
-    height: 1.25,
+    height: 1.35,
   );
 
   static Widget filterChipLabel(String text) => Text(
