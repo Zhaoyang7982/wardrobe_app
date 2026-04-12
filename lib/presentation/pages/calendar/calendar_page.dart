@@ -18,7 +18,7 @@ final calendarDayStoreProvider = Provider<CalendarDayStore>((ref) => CalendarDay
 
 /// 月视图日历：穿搭圆点、选日列表、规划/已穿、备注与提醒
 ///
-/// Web 且视口宽度 ≥ [CalendarWebTokens.minWidth] 时使用紫色 PC 规范布局；
+/// Web 且视口宽度 ≥ [CalendarWebStyle.minWidth] 时使用宽屏布局，配色随 [ThemeData]；
 /// 其余平台与窄窗保持原 Material 行为。
 class CalendarPage extends ConsumerStatefulWidget {
   const CalendarPage({super.key});
@@ -48,7 +48,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   static DateTime _normalize(DateTime d) => DateTime(d.year, d.month, d.day);
 
   bool _useWebWideUi(BuildContext context) {
-    return kIsWeb && MediaQuery.sizeOf(context).width >= CalendarWebTokens.minWidth;
+    return kIsWeb && MediaQuery.sizeOf(context).width >= CalendarWebStyle.minWidth;
   }
 
   @override
@@ -360,7 +360,12 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     );
   }
 
-  Widget? _webMarkerRow(BuildContext context, DateTime day, List<Object?> events) {
+  Widget? _webMarkerRow(
+    BuildContext context,
+    DateTime day,
+    List<Object?> events,
+    CalendarWebStyle web,
+  ) {
     if (events.isEmpty) {
       return null;
     }
@@ -374,8 +379,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             Container(
               width: 5,
               height: 5,
-              decoration: const BoxDecoration(
-                color: CalendarWebTokens.purple,
+              decoration: BoxDecoration(
+                color: web.primary,
                 shape: BoxShape.circle,
               ),
             )
@@ -385,7 +390,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               height: 5,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: CalendarWebTokens.purple, width: 1.2),
+                border: Border.all(color: web.primary, width: 1.2),
                 color: Colors.transparent,
               ),
             ),
@@ -394,10 +399,15 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     );
   }
 
-  Widget? _webDefaultDayCell(BuildContext context, DateTime day, DateTime focusedDay) {
+  Widget? _webDefaultDayCell(
+    BuildContext context,
+    DateTime day,
+    DateTime focusedDay,
+    CalendarWebStyle web,
+  ) {
     final isOutside = day.month != focusedDay.month;
     final hover = _webHoverDay != null && isSameDay(_webHoverDay!, day);
-    final textColor = isOutside ? CalendarWebTokens.outsideDay : CalendarWebTokens.title;
+    final textColor = isOutside ? web.outsideDay : web.title;
     return MouseRegion(
       onEnter: (_) => setState(() => _webHoverDay = day),
       onExit: (_) => setState(() => _webHoverDay = null),
@@ -406,22 +416,27 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         margin: const EdgeInsets.all(3),
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: hover ? CalendarWebTokens.bgTint : Colors.transparent,
+          color: hover ? web.bgTint : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         alignment: Alignment.center,
         child: Text(
           '${day.day}',
-          style: CalendarWebTokens.text(14, FontWeight.w500, textColor),
+          style: web.text(14, FontWeight.w500, textColor),
         ),
       ),
     );
   }
 
-  Widget? _webTodayDayCell(BuildContext context, DateTime day, DateTime focusedDay) {
+  Widget? _webTodayDayCell(
+    BuildContext context,
+    DateTime day,
+    DateTime focusedDay,
+    CalendarWebStyle web,
+  ) {
     final isOutside = day.month != focusedDay.month;
     final hover = _webHoverDay != null && isSameDay(_webHoverDay!, day);
-    final textColor = isOutside ? CalendarWebTokens.outsideDay : CalendarWebTokens.title;
+    final textColor = isOutside ? web.outsideDay : web.title;
     return MouseRegion(
       onEnter: (_) => setState(() => _webHoverDay = day),
       onExit: (_) => setState(() => _webHoverDay = null),
@@ -430,19 +445,24 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         margin: const EdgeInsets.all(3),
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: hover ? CalendarWebTokens.bgTint : CalendarWebTokens.bgTint.withValues(alpha: 0.65),
+          color: hover ? web.bgTint : web.bgTint.withValues(alpha: 0.65),
           borderRadius: BorderRadius.circular(8),
         ),
         alignment: Alignment.center,
         child: Text(
           '${day.day}',
-          style: CalendarWebTokens.text(14, FontWeight.w600, textColor),
+          style: web.text(14, FontWeight.w600, textColor),
         ),
       ),
     );
   }
 
-  Widget? _webSelectedDayCell(BuildContext context, DateTime day, DateTime focusedDay) {
+  Widget? _webSelectedDayCell(
+    BuildContext context,
+    DateTime day,
+    DateTime focusedDay,
+    CalendarWebStyle web,
+  ) {
     return Container(
       margin: const EdgeInsets.all(3),
       alignment: Alignment.center,
@@ -450,61 +470,66 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         width: 36,
         height: 36,
         alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          color: CalendarWebTokens.purple,
+        decoration: BoxDecoration(
+          color: web.primary,
           shape: BoxShape.circle,
         ),
         child: Text(
           '${day.day}',
-          style: CalendarWebTokens.text(14, FontWeight.w600, CalendarWebTokens.surface),
+          style: web.text(14, FontWeight.w600, web.onPrimary),
         ),
       ),
     );
   }
 
-  Widget? _webOutsideDayCell(BuildContext context, DateTime day, DateTime focusedDay) {
+  Widget? _webOutsideDayCell(
+    BuildContext context,
+    DateTime day,
+    DateTime focusedDay,
+    CalendarWebStyle web,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Center(
         child: Text(
           '${day.day}',
-          style: CalendarWebTokens.text(14, FontWeight.w400, CalendarWebTokens.outsideDay),
+          style: web.text(14, FontWeight.w400, web.outsideDay),
         ),
       ),
     );
   }
 
-  Widget? _webDowCell(BuildContext context, DateTime day) {
+  Widget? _webDowCell(BuildContext context, DateTime day, CalendarWebStyle web) {
     final label = DateFormat.E('zh_CN').format(day);
     return Container(
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(vertical: 10),
-      color: CalendarWebTokens.bgTint,
+      color: web.bgTint,
       child: Text(
         label,
-        style: CalendarWebTokens.text(13, FontWeight.w500, CalendarWebTokens.title),
+        style: web.text(13, FontWeight.w500, web.title),
       ),
     );
   }
 
-  Widget _buildWebCalendarHeader() {
+  Widget _buildWebCalendarHeader(CalendarWebStyle web) {
     final monthTitle = DateFormat('y年M月', 'zh_CN').format(_focusedDay);
     final iconStyle = IconButton.styleFrom(
       minimumSize: const Size(36, 36),
       padding: EdgeInsets.zero,
       visualDensity: VisualDensity.compact,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      foregroundColor: CalendarWebTokens.title,
+      foregroundColor: web.title,
     ).copyWith(
       backgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.hovered)) {
-          return CalendarWebTokens.bgTint;
+          return web.bgTint;
         }
         return null;
       }),
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.pressed)) {
-          return CalendarWebTokens.purple.withValues(alpha: 0.12);
+          return web.primary.withValues(alpha: 0.12);
         }
         return null;
       }),
@@ -517,7 +542,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         children: [
           Text(
             '日历',
-            style: CalendarWebTokens.text(18, FontWeight.w600, CalendarWebTokens.title),
+            style: web.text(18, FontWeight.w600, web.title),
           ),
           const SizedBox(height: 12),
           Row(
@@ -532,7 +557,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 child: Text(
                   monthTitle,
                   textAlign: TextAlign.center,
-                  style: CalendarWebTokens.text(14, FontWeight.w400, CalendarWebTokens.body),
+                  style: web.text(14, FontWeight.w400, web.body),
                 ),
               ),
               IconButton(
@@ -544,15 +569,15 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               const SizedBox(width: 8),
               TextButton(
                 style: TextButton.styleFrom(
-                  foregroundColor: CalendarWebTokens.purpleDark,
-                  backgroundColor: CalendarWebTokens.bgTint,
+                  foregroundColor: web.primary,
+                  backgroundColor: web.bgTint,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: _webGoToday,
                 child: Text(
                   '今天',
-                  style: CalendarWebTokens.text(13, FontWeight.w500, CalendarWebTokens.purpleDark),
+                  style: web.text(13, FontWeight.w600, web.primary),
                 ),
               ),
             ],
@@ -562,7 +587,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     );
   }
 
-  Widget _buildWebTableCalendar(ThemeData theme) {
+  Widget _buildWebTableCalendar(CalendarWebStyle web) {
     return Listener(
       onPointerSignal: (signal) {
         if (signal is PointerScrollEvent) {
@@ -593,21 +618,21 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           markersAlignment: Alignment.bottomCenter,
           markerSize: 5,
           markerMargin: const EdgeInsets.only(top: 2),
-          defaultTextStyle: CalendarWebTokens.text(14, FontWeight.w500, CalendarWebTokens.title),
-          weekendTextStyle: CalendarWebTokens.text(14, FontWeight.w500, CalendarWebTokens.title),
+          defaultTextStyle: web.text(14, FontWeight.w500, web.title),
+          weekendTextStyle: web.text(14, FontWeight.w500, web.title),
           selectedDecoration: const BoxDecoration(color: Colors.transparent),
-          selectedTextStyle: CalendarWebTokens.text(14, FontWeight.w600, CalendarWebTokens.surface),
+          selectedTextStyle: web.text(14, FontWeight.w600, web.onPrimary),
           todayDecoration: const BoxDecoration(color: Colors.transparent),
-          todayTextStyle: CalendarWebTokens.text(14, FontWeight.w600, CalendarWebTokens.title),
-          outsideTextStyle: CalendarWebTokens.text(14, FontWeight.w400, CalendarWebTokens.outsideDay),
+          todayTextStyle: web.text(14, FontWeight.w600, web.title),
+          outsideTextStyle: web.text(14, FontWeight.w400, web.outsideDay),
         ),
         calendarBuilders: CalendarBuilders<Object>(
-          dowBuilder: _webDowCell,
-          selectedBuilder: _webSelectedDayCell,
-          todayBuilder: _webTodayDayCell,
-          outsideBuilder: _webOutsideDayCell,
-          defaultBuilder: _webDefaultDayCell,
-          markerBuilder: _webMarkerRow,
+          dowBuilder: (c, d) => _webDowCell(c, d, web),
+          selectedBuilder: (c, d, f) => _webSelectedDayCell(c, d, f, web),
+          todayBuilder: (c, d, f) => _webTodayDayCell(c, d, f, web),
+          outsideBuilder: (c, d, f) => _webOutsideDayCell(c, d, f, web),
+          defaultBuilder: (c, d, f) => _webDefaultDayCell(c, d, f, web),
+          markerBuilder: (c, d, e) => _webMarkerRow(c, d, e, web),
         ),
         onDaySelected: (selected, focused) {
           setState(() {
@@ -623,36 +648,36 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     );
   }
 
-  Widget _buildWebLowerPanel(ThemeData theme, List<Outfit> dayOutfits, DateTime selectedNorm) {
+  Widget _buildWebLowerPanel(CalendarWebStyle web, List<Outfit> dayOutfits, DateTime selectedNorm) {
     final primaryStyle = FilledButton.styleFrom(
-      backgroundColor: CalendarWebTokens.purple,
-      foregroundColor: CalendarWebTokens.surface,
+      backgroundColor: web.primary,
+      foregroundColor: web.onPrimary,
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
     ).copyWith(
       backgroundColor: WidgetStateProperty.resolveWith((s) {
         if (s.contains(WidgetState.hovered)) {
-          return CalendarWebTokens.purpleDark;
+          return web.primaryHover;
         }
         if (s.contains(WidgetState.pressed)) {
-          return CalendarWebTokens.purpleDark;
+          return web.primaryPressed;
         }
-        return CalendarWebTokens.purple;
+        return web.primary;
       }),
     );
 
     final secondaryStyle = OutlinedButton.styleFrom(
-      foregroundColor: CalendarWebTokens.purple,
-      side: const BorderSide(color: CalendarWebTokens.purple, width: 1.5),
-      backgroundColor: CalendarWebTokens.surface,
+      foregroundColor: web.primary,
+      side: BorderSide(color: web.primary, width: 1.5),
+      backgroundColor: web.surface,
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
     ).copyWith(
       foregroundColor: WidgetStateProperty.resolveWith((s) {
         if (s.contains(WidgetState.hovered) || s.contains(WidgetState.pressed)) {
-          return CalendarWebTokens.purpleDark;
+          return web.primaryPressed;
         }
-        return CalendarWebTokens.purple;
+        return web.primary;
       }),
     );
 
@@ -661,7 +686,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       children: [
         Text(
           '${_selectedDay.year}年${_selectedDay.month}月${_selectedDay.day}日',
-          style: CalendarWebTokens.text(16, FontWeight.w600, CalendarWebTokens.title),
+          style: web.text(16, FontWeight.w600, web.title),
         ),
         const SizedBox(height: 16),
         if (_isSameOrFuture(_selectedDay) || !_isFutureDay(_selectedDay))
@@ -689,7 +714,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         if (_isSameOrFuture(_selectedDay) || !_isFutureDay(_selectedDay)) const SizedBox(height: 20),
         Text(
           '当日搭配',
-          style: CalendarWebTokens.text(14, FontWeight.w500, CalendarWebTokens.title),
+          style: web.text(14, FontWeight.w500, web.title),
         ),
         const SizedBox(height: 8),
         if (dayOutfits.isEmpty)
@@ -697,9 +722,9 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
-              color: CalendarWebTokens.surface,
+              color: web.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: CalendarWebTokens.border),
+              border: Border.all(color: web.border),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.06),
@@ -710,17 +735,17 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             ),
             child: Column(
               children: [
-                Icon(Icons.event_note_outlined, size: 36, color: CalendarWebTokens.muted),
+                Icon(Icons.event_note_outlined, size: 36, color: web.muted),
                 const SizedBox(height: 8),
                 Text(
                   '暂无记录或计划',
-                  style: CalendarWebTokens.text(14, FontWeight.w500, CalendarWebTokens.body),
+                  style: web.text(14, FontWeight.w500, web.body),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '在上方规划搭配或标记已穿后，将在此展示',
                   textAlign: TextAlign.center,
-                  style: CalendarWebTokens.text(12, FontWeight.w400, CalendarWebTokens.muted),
+                  style: web.text(12, FontWeight.w400, web.muted),
                 ),
               ],
             ),
@@ -740,18 +765,18 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Material(
-                color: CalendarWebTokens.surface,
+                color: web.surface,
                 elevation: 2,
                 surfaceTintColor: Colors.transparent,
                 shadowColor: Colors.black.withValues(alpha: 0.08),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: CalendarWebTokens.border),
+                  side: BorderSide(color: web.border),
                 ),
                 child: ListTile(
-                  title: Text(o.name, style: CalendarWebTokens.text(15, FontWeight.w600, CalendarWebTokens.title)),
-                  subtitle: Text(badge, style: CalendarWebTokens.text(12, FontWeight.w400, CalendarWebTokens.body)),
-                  trailing: const Icon(Icons.chevron_right, color: CalendarWebTokens.muted),
+                  title: Text(o.name, style: web.text(15, FontWeight.w600, web.title)),
+                  subtitle: Text(badge, style: web.text(12, FontWeight.w400, web.body)),
+                  trailing: Icon(Icons.chevron_right, color: web.muted),
                   onTap: () => context.push(AppRoutePaths.outfitDetail(o.id)),
                 ),
               ),
@@ -760,24 +785,30 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         const SizedBox(height: 20),
         Text(
           '活动备注',
-          style: CalendarWebTokens.text(14, FontWeight.w500, CalendarWebTokens.title),
+          style: web.text(14, FontWeight.w500, web.title),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _noteController,
           maxLines: 3,
-          style: CalendarWebTokens.text(14, FontWeight.w400, CalendarWebTokens.body),
+          style: web.text(14, FontWeight.w400, web.body),
           decoration: InputDecoration(
             hintText: '请输入活动、场景、备注信息',
-            hintStyle: CalendarWebTokens.text(14, FontWeight.w400, CalendarWebTokens.muted),
+            hintStyle: web.text(14, FontWeight.w400, web.muted),
             filled: true,
-            fillColor: CalendarWebTokens.surface,
+            fillColor: web.surface,
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: CalendarWebTokens.border)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: CalendarWebTokens.border)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: web.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: web.border),
+            ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: CalendarWebTokens.purple, width: 2),
+              borderSide: BorderSide(color: web.primary, width: 2),
             ),
           ),
         ),
@@ -791,14 +822,14 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 children: [
                   Text(
                     '提醒时间',
-                    style: CalendarWebTokens.text(13, FontWeight.w500, CalendarWebTokens.title),
+                    style: web.text(13, FontWeight.w500, web.title),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _reminderTime == null
                         ? '未设置（保存后生效）'
                         : '${_reminderTime!.hour.toString().padLeft(2, '0')}:${_reminderTime!.minute.toString().padLeft(2, '0')}',
-                    style: CalendarWebTokens.text(13, FontWeight.w400, CalendarWebTokens.body),
+                    style: web.text(13, FontWeight.w400, web.body),
                   ),
                 ],
               ),
@@ -806,12 +837,12 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             if (_reminderTime != null)
               TextButton(
                 onPressed: () => setState(() => _reminderTime = null),
-                child: Text('清除', style: CalendarWebTokens.text(13, FontWeight.w500, CalendarWebTokens.purple)),
+                child: Text('清除', style: web.text(13, FontWeight.w500, web.primary)),
               ),
             IconButton(
               tooltip: '选择时间',
               onPressed: _pickReminder,
-              icon: const Icon(Icons.schedule, color: CalendarWebTokens.purple),
+              icon: Icon(Icons.schedule, color: web.primary),
             ),
           ],
         ),
@@ -820,28 +851,28 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           alignment: Alignment.centerRight,
           child: FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: CalendarWebTokens.purple,
-              foregroundColor: CalendarWebTokens.surface,
+              backgroundColor: web.primary,
+              foregroundColor: web.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: _savingMeta ? null : _saveDayMeta,
             child: _savingMeta
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: CalendarWebTokens.surface),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: web.onPrimary),
                   )
                 : const Text('保存'),
           ),
         ),
         const SizedBox(height: 16),
-        const Divider(height: 1, color: CalendarWebTokens.border),
+        Divider(height: 1, color: web.border),
         const SizedBox(height: 12),
         Text(
           'Web 端仅保存提醒，系统通知需在手机端开启',
           textAlign: TextAlign.center,
-          style: CalendarWebTokens.text(12, FontWeight.w400, CalendarWebTokens.muted),
+          style: web.text(12, FontWeight.w400, web.muted),
         ),
       ],
     );
@@ -880,12 +911,13 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     }
 
     if (webWide) {
+      final web = CalendarWebStyle.fromTheme(theme);
       return Scaffold(
-        backgroundColor: CalendarWebTokens.surface,
+        backgroundColor: web.surface,
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildWebCalendarHeader(),
+            _buildWebCalendarHeader(web),
             Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -896,16 +928,16 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                       onRefresh: _reload,
                       child: SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        child: _buildWebTableCalendar(theme),
+                        child: _buildWebTableCalendar(web),
                       ),
                     ),
                   ),
-                  const VerticalDivider(width: 1, thickness: 1, color: CalendarWebTokens.border),
+                  VerticalDivider(width: 1, thickness: 1, color: web.border),
                   Expanded(
                     flex: 4,
                     child: RefreshIndicator(
                       onRefresh: _reload,
-                      child: _buildWebLowerPanel(theme, dayOutfits, selectedNorm),
+                      child: _buildWebLowerPanel(web, dayOutfits, selectedNorm),
                     ),
                   ),
                 ],

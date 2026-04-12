@@ -1,21 +1,60 @@
 import 'package:flutter/material.dart';
 
-/// PC Web 日历页（≥1280）视觉规范，与全局主题隔离。
-abstract final class CalendarWebTokens {
-  CalendarWebTokens._();
+/// Web 宽屏日历（≥ [CalendarWebStyle.minWidth]）的用色与字体栈。
+///
+/// 颜色取自 [ColorScheme]，随应用主题种子色 / 深浅色模式变化；不再写死紫色。
+class CalendarWebStyle {
+  CalendarWebStyle._({
+    required this.primary,
+    required this.primaryHover,
+    required this.primaryPressed,
+    required this.bgTint,
+    required this.title,
+    required this.body,
+    required this.muted,
+    required this.border,
+    required this.surface,
+    required this.outsideDay,
+    required this.onPrimary,
+  });
+
+  factory CalendarWebStyle.fromTheme(ThemeData theme) {
+    final cs = theme.colorScheme;
+    final primary = cs.primary;
+    final dark = theme.brightness == Brightness.dark;
+    final hoverMod = dark ? Colors.white : Colors.black;
+    final primaryHover = Color.alphaBlend(hoverMod.withValues(alpha: 0.10), primary);
+    final primaryPressed = Color.alphaBlend(hoverMod.withValues(alpha: 0.18), primary);
+    final bgTint = Color.alphaBlend(primary.withValues(alpha: 0.09), cs.surface);
+
+    return CalendarWebStyle._(
+      primary: primary,
+      primaryHover: primaryHover,
+      primaryPressed: primaryPressed,
+      bgTint: bgTint,
+      title: cs.onSurface,
+      body: cs.onSurfaceVariant,
+      muted: cs.outline,
+      border: cs.outlineVariant,
+      surface: cs.surface,
+      outsideDay: cs.onSurface.withValues(alpha: 0.38),
+      onPrimary: cs.onPrimary,
+    );
+  }
 
   static const double minWidth = 1280;
 
-  static const Color purple = Color(0xFF7B61FF);
-  static const Color purpleDark = Color(0xFF6A4DE2);
-  static const Color bgTint = Color(0xFFF5F2FF);
-
-  static const Color title = Color(0xFF333333);
-  static const Color body = Color(0xFF666666);
-  static const Color muted = Color(0xFF999999);
-  static const Color border = Color(0xFFE5E5E5);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color outsideDay = Color(0xFFCCCCCC);
+  final Color primary;
+  final Color primaryHover;
+  final Color primaryPressed;
+  final Color bgTint;
+  final Color title;
+  final Color body;
+  final Color muted;
+  final Color border;
+  final Color surface;
+  final Color outsideDay;
+  final Color onPrimary;
 
   /// 与需求文档一致的无衬线栈（Web 优先）
   static const List<String> fontFamilyFallback = [
@@ -29,7 +68,7 @@ abstract final class CalendarWebTokens {
     'sans-serif',
   ];
 
-  static TextStyle text(double size, FontWeight w, Color c) => TextStyle(
+  TextStyle text(double size, FontWeight w, Color c) => TextStyle(
         fontSize: size,
         fontWeight: w,
         color: c,
