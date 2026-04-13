@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../widgets/wardrobe_data_source_banner.dart';
 
 /// 主导航规格（底部栏与宽屏侧栏共用，避免分叉维护）
 class _NavDest {
@@ -50,52 +51,70 @@ class HomePage extends StatelessWidget {
     if (useRail) {
       final theme = Theme.of(context);
       return Scaffold(
-        body: Row(
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            NavigationRailTheme(
-              data: NavigationRailThemeData(
-                backgroundColor: theme.colorScheme.surfaceContainerLow,
-                indicatorColor: theme.colorScheme.primaryContainer,
-                selectedIconTheme: IconThemeData(color: theme.colorScheme.primary),
-                selectedLabelTextStyle: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-                unselectedLabelTextStyle: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
-              child: NavigationRail(
-                extended: false,
-                labelType: NavigationRailLabelType.all,
-                selectedIndex: navigationShell.currentIndex,
-                onDestinationSelected: navigationShell.goBranch,
-                destinations: [
-                  for (final d in navDests)
-                    NavigationRailDestination(
-                      icon: Icon(d.icon),
-                      selectedIcon: Icon(d.selectedIcon),
-                      label: Text(d.label),
+            const WardrobeDataSourceBanner(),
+            Expanded(
+              child: Row(
+                children: [
+                  NavigationRailTheme(
+                    data: NavigationRailThemeData(
+                      backgroundColor: theme.colorScheme.surfaceContainerLow,
+                      indicatorColor: theme.colorScheme.primaryContainer,
+                      selectedIconTheme: IconThemeData(
+                        color: theme.colorScheme.primary,
+                      ),
+                      selectedLabelTextStyle: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                      unselectedLabelTextStyle: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
                     ),
+                    child: NavigationRail(
+                      extended: false,
+                      labelType: NavigationRailLabelType.all,
+                      selectedIndex: navigationShell.currentIndex,
+                      onDestinationSelected: navigationShell.goBranch,
+                      destinations: [
+                        for (final d in navDests)
+                          NavigationRailDestination(
+                            icon: Icon(d.icon),
+                            selectedIcon: Icon(d.selectedIcon),
+                            label: Text(d.label),
+                          ),
+                      ],
+                    ),
+                  ),
+                  VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.5,
+                    ),
+                  ),
+                  Expanded(child: navigationShell),
                 ],
               ),
             ),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-            Expanded(child: navigationShell),
           ],
         ),
       );
     }
 
     return Scaffold(
-      body: navigationShell,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const WardrobeDataSourceBanner(),
+          Expanded(child: navigationShell),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: navigationShell.goBranch,
