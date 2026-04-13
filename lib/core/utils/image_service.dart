@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'local_selfie_segmentation_cutout.dart';
+
 /// remove.bg 成功后的引用：原生为 `file://`，Web 为 `data:image/...;base64,...`
 class RemoveBgUrls {
   RemoveBgUrls({
@@ -138,6 +140,43 @@ class ImageService {
   }
 
   /// 调用 remove.bg：[imageBytes] 为待上传 JPEG/PNG 等；[originalStorageRef] 写入返回结果的原图字段
+  /// [useVipCloudRemoveBg] 为 true 时走 remove.bg；为 false 时走端上 TFLite（仅 iOS/Android）
+  Future<RemoveBgUrls> removeBackgroundAdaptive(
+    Uint8List imageBytes, {
+    required String originalStorageRef,
+    required bool useVipCloudRemoveBg,
+    String filename = 'upload.jpg',
+  }) async {
+    if (useVipCloudRemoveBg) {
+      return removeBackgroundBytes(
+        imageBytes,
+        originalStorageRef: originalStorageRef,
+        filename: filename,
+      );
+    }
+    if (kIsWeb) {
+      throw ImageServiceException(
+        '免费会员在网页版无法使用本地抠图。请「跳过抠图」，或升级 VIP 使用云端抠图。',
+        shouldRetry: false,
+      );
+    }
+    try {
+      final png =
+          await LocalSelfieSegmentationCutout.matteFromImageBytes(imageBytes);
+      final cutoutRef = Uri.file(
+        (await _writeTempFile(png, '.png')).absolute.path,
+      ).toString();
+      return RemoveBgUrls(
+        originalImageUrl: originalStorageRef,
+        cutoutImageUrl: cutoutRef,
+      );
+    } on ImageServiceException {
+      rethrow;
+    } catch (e) {
+      throw ImageServiceException('本地抠图失败：$e', shouldRetry: true);
+    }
+  }
+
   Future<RemoveBgUrls> removeBackgroundBytes(
     Uint8List imageBytes, {
     required String originalStorageRef,

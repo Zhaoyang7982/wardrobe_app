@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,8 @@ import '../../../core/utils/image_service.dart';
 import '../../../core/utils/stored_image_ref.dart';
 import '../../../data/repositories/repository_providers.dart';
 import '../../../domain/models/clothing.dart';
+import '../../../domain/models/membership_tier.dart';
+import '../../providers/membership_provider.dart';
 
 /// 添加衣物：分步表单（图片 → 基本信息 → 标签 → 购买信息）
 /// 传入 [initialForEdit] 时为编辑模式：保留 id、穿着统计等，保存为更新。
@@ -180,7 +183,56 @@ class _AddClothingPageState extends ConsumerState<AddClothingPage> {
         _colors.isNotEmpty;
   }
 
+  /// Web + 免费会员：不提供选图入口（见 [_buildStepImage]）；此处为兜底拦截
+  bool get _webFreeImageUploadBlocked =>
+      kIsWeb && ref.read(membershipTierProvider) == MembershipTier.free;
+
+  /// 选图前强提示：不做人脸/像素检测，仅降低无效抠图与 API 浪费
+  Future<void> _confirmThenPickImage(ImageSource source) async {
+    if (_webFreeImageUploadBlocked) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '免费会员请在手机 App 内添加照片；网页上传与云端抠图为 VIP 功能。',
+          ),
+        ),
+      );
+      return;
+    }
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('拍摄 / 选图提示'),
+        content: const SingleChildScrollView(
+          child: Text(
+            '为让自动抠图效果更好、减少失败重试，建议：\n\n'
+            '· 尽量选择单色、干净、少杂物的背景（如白墙、纯色布）\n'
+            '· 光线尽量均匀，避免强逆光或大块阴影\n'
+            '· 衣物主体完整入镜，尽量占据画面主要区域\n\n'
+            '若背景较复杂，仍可选图；之后可选用「跳过抠图」或「重试」。',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('继续选图'),
+          ),
+        ],
+      ),
+    );
+    if (go != true || !mounted) return;
+    await _pickImage(source);
+  }
+
   Future<void> _pickImage(ImageSource source) async {
+    if (_webFreeImageUploadBlocked) {
+      return;
+    }
     final x = source == ImageSource.camera
         ? await _imageService.pickFromCamera()
         : await _imageService.pickFromGallery();
@@ -236,9 +288,12 @@ class _AddClothingPageState extends ConsumerState<AddClothingPage> {
       _canRetryBg = false;
     });
     try {
-      final urls = await _imageService.removeBackgroundBytes(
+      final useVipApi =
+          ref.read(membershipTierProvider) == MembershipTier.vip;
+      final urls = await _imageService.removeBackgroundAdaptive(
         compressedJpeg,
         originalStorageRef: originalRef,
+        useVipCloudRemoveBg: useVipApi,
         filename: _removeBgFilename,
       );
       if (!mounted) {
@@ -484,38 +539,69 @@ class _AddClothingPageState extends ConsumerState<AddClothingPage> {
   }
 
   Widget _buildStepImage(ThemeData theme) {
+    final tier = ref.watch(membershipTierProvider);
+    final webFreeBlocked = kIsWeb && tier == MembershipTier.free;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _removingBg ? null : () => _pickImage(ImageSource.camera),
-                icon: const Icon(Icons.camera_alt_outlined),
-                label: const Text('拍照'),
+        if (webFreeBlocked) ...[
+          Material(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            child: Padding(
+              padding: const EdgeInsets.all(AppTheme.spaceMd),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('网页端 · 免费会员', style: theme.textTheme.titleSmall),
+                  const SizedBox(height: AppTheme.spaceSm),
+                  Text(
+                    '本页不提供拍照 / 相册选图。请在 iPhone 或 Android 打开「AI衣橱助手」App，登录同一账号后添加或更换衣物照片；'
+                    '本地抠图仅在 App 内可用。\n\n'
+                    '开通 VIP 后，可在网页端直接上传图片，并使用云端高精度抠图。',
+                    style: theme.textTheme.bodySmall?.copyWith(height: 1.45),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: AppTheme.spaceSm),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _removingBg ? null : () => _pickImage(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('相册'),
+          ),
+          const SizedBox(height: AppTheme.spaceMd),
+        ] else ...[
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _removingBg ? null : () => _confirmThenPickImage(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  label: const Text('拍照'),
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTheme.spaceMd),
+              const SizedBox(width: AppTheme.spaceSm),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _removingBg ? null : () => _confirmThenPickImage(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('相册'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spaceMd),
+        ],
         if (_removingBg)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppTheme.spaceLg),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceLg),
             child: Center(
               child: Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: AppTheme.spaceSm),
-                  Text('正在抠图…'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: AppTheme.spaceSm),
+                  Text(
+                    ref.watch(membershipTierProvider) == MembershipTier.vip
+                        ? '正在云端抠图…'
+                        : '正在本地抠图…',
+                  ),
                 ],
               ),
             ),

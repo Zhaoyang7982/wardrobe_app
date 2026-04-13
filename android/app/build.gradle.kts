@@ -20,6 +20,11 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    androidResources {
+        // TFLite 需避免被 aapt 压缩，否则 Interpreter.fromAsset 读模型会失败
+        noCompress += "tflite"
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.wardrobe.wardrobe_app"
