@@ -10,15 +10,13 @@ pluginManagement {
 
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
-    // 国内网络下优先走阿里云镜像；central 单独列出，便于更多构件从镜像拉取而非直连 repo.maven.apache.org
+    // 仅使用阿里云 Maven 镜像，避免回源 google()/mavenCentral()/gradlePluginPortal() 导致连接重置
     repositories {
         maven { url = uri("https://maven.aliyun.com/repository/google") }
         maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         maven { url = uri("https://maven.aliyun.com/repository/public") }
         maven { url = uri("https://maven.aliyun.com/repository/central") }
-        google()
-        mavenCentral()
-        gradlePluginPortal()
+        maven { url = uri("https://maven.aliyun.com/repository/jcenter") }
     }
 }
 

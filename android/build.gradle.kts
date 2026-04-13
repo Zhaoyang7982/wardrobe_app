@@ -1,13 +1,13 @@
 import javax.xml.parsers.DocumentBuilderFactory
 
 allprojects {
-    // 与 settings.gradle.kts 中 pluginManagement 一致，模块依赖也优先镜像
+    // 与 settings.gradle.kts 一致，仅阿里云镜像
     repositories {
         maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         maven { url = uri("https://maven.aliyun.com/repository/public") }
         maven { url = uri("https://maven.aliyun.com/repository/central") }
-        google()
-        mavenCentral()
+        maven { url = uri("https://maven.aliyun.com/repository/jcenter") }
     }
 }
 

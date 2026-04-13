@@ -1,4 +1,7 @@
 # Wardrobe App — Flutter iOS CocoaPods 入口（需先在本机执行 `flutter pub get` 生成 Flutter/Generated.xcconfig）
+# CDN（jsdelivr）易超时，改用 Git Specs 源；可改为 https://github.com/CocoaPods/Specs.git
+source 'https://mirrors.tuna.tsinghua.edu.cn/git/CocoaPods/Specs.git'
+
 platform :ios, '13.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'

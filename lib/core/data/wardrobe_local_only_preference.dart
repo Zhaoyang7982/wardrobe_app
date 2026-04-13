@@ -18,5 +18,5 @@ Future<void> setWardrobeLocalOnlyMode(bool value) async {
   final p = await SharedPreferences.getInstance();
   await p.setBool(_kLocalOnly, value);
   wardrobeLocalOnlyMode = value;
-  appAuthRefresh.notifyListeners();
+  appAuthRefresh.requestRouterRefresh();
 }

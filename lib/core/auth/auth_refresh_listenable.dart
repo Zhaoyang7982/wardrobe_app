@@ -23,6 +23,9 @@ final class AuthRefreshListenable extends ChangeNotifier {
 
   StreamSubscription<dynamic>? _sub;
 
+  /// 会话外场景（如仅本机偏好）需重建 GoRouter 时调用；勿在外部直接调 [notifyListeners]。
+  void requestRouterRefresh() => notifyListeners();
+
   @override
   void dispose() {
     _sub?.cancel();
