@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/data/wardrobe_local_only_preference.dart';
 import '../../data/supabase/supabase_bootstrap_state.dart';
 import '../auth/auth_refresh_listenable.dart';
 import '../../presentation/pages/auth/login_page.dart';
@@ -64,7 +65,8 @@ bool _isPublicPath(String loc) {
 }
 
 String? _authRedirect(BuildContext context, GoRouterState state) {
-  if (!supabaseCloudEnabled) {
+  // 未配置云端、或用户显式「仅本机」：不强制登录，数据以 Isar 为主
+  if (!supabaseCloudEnabled || wardrobeLocalOnlyMode) {
     return null;
   }
   final loc = state.matchedLocation;

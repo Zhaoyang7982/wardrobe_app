@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/constants/app_constants.dart';
+import 'core/data/wardrobe_local_only_preference.dart';
 import 'core/notifications/calendar_notifications_bootstrap.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/accent_color_provider.dart';
@@ -36,6 +37,7 @@ Future<void> main() async {
   }
   await _loadEnv();
   await _tryInitSupabase();
+  await loadWardrobeLocalOnlyPreference();
   await bootstrapCalendarNotifications();
   runApp(const ProviderScope(child: WardrobeApp()));
 }

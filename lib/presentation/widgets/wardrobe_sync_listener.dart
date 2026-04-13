@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/data/wardrobe_local_only_preference.dart';
 import '../../data/repositories/repository_providers.dart';
 import '../../data/supabase/supabase_bootstrap_state.dart';
 import '../../data/sync/sync_providers.dart';
@@ -13,7 +14,7 @@ class WardrobeSyncListener extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (supabaseCloudEnabled) {
+    if (supabaseCloudEnabled && !wardrobeLocalOnlyMode) {
       ref.listen(connectivityOnlineProvider, (prev, next) {
         next.whenData((online) async {
           if (online) {

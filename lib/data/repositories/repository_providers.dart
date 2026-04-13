@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/data/wardrobe_local_only_preference.dart';
 import '../../domain/repositories/clothing_repository.dart';
 import '../../domain/repositories/outfit_repository.dart';
 import '../supabase/supabase_bootstrap_state.dart';
@@ -14,7 +15,7 @@ import 'supabase_outfit_repository.dart';
 
 /// 已配置且启动成功且已登录时使用 Supabase（含离线队列）；否则走本地（Isar / Web 内存）
 final clothingRepositoryProvider = FutureProvider<ClothingRepository>((ref) async {
-  if (supabaseCloudEnabled) {
+  if (supabaseCloudEnabled && !wardrobeLocalOnlyMode) {
     try {
       final session = Supabase.instance.client.auth.currentSession;
       if (session != null) {
@@ -30,7 +31,7 @@ final clothingRepositoryProvider = FutureProvider<ClothingRepository>((ref) asyn
 });
 
 final outfitRepositoryProvider = FutureProvider<OutfitRepository>((ref) async {
-  if (supabaseCloudEnabled) {
+  if (supabaseCloudEnabled && !wardrobeLocalOnlyMode) {
     try {
       final session = Supabase.instance.client.auth.currentSession;
       if (session != null) {

@@ -1,0 +1,7 @@
+// 方式一（推荐）：在 Xcode 里为 Runner 选过一次 Personal Team 并生成证书后，在项目根目录执行：
+//   bash ios/configure_signing.sh
+// 脚本会生成同目录下的 Signing.xcconfig（已 gitignore）。
+//
+// 方式二：复制本文件为 Signing.xcconfig，把下行改成你的 10 位 Team ID（不是中文团队显示名）。
+// 查看 Team ID：Xcode → Settings → Accounts → 选中 Apple ID → 团队详情；或 developer.apple.com → Membership。
+DEVELOPMENT_TEAM = PASTE_YOUR_10_CHAR_TEAM_ID

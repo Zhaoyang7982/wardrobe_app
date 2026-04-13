@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/data/wardrobe_local_only_preference.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/repositories/repository_providers.dart';
 import '../../../data/sync/sync_providers.dart';
@@ -47,6 +48,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         return;
       }
       if (res.session != null) {
+        await setWardrobeLocalOnlyMode(false);
         ref.invalidate(clothingRepositoryProvider);
         ref.invalidate(outfitRepositoryProvider);
         await ref.read(cloudWardrobeSyncProvider).flushIfOnline();
