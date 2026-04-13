@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/auth/auth_refresh_listenable.dart';
 import '../../../core/data/wardrobe_local_only_preference.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/accent_color_provider.dart';
@@ -47,25 +48,44 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
             ],
           ),
         );
-        if (ok != true || !mounted) {
+        if (ok != true || !context.mounted) {
           return;
         }
-        await Supabase.instance.client.auth.signOut();
-        await ref.read(cloudWardrobeSyncProvider).clearCacheAndQueue();
+        // 先写入仅本机偏好，避免先登出导致瞬间被重定向到登录页且无「仅本机」入口
         await setWardrobeLocalOnlyMode(true);
         await _invalidateRepos();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已切换为仅本机模式')));
+        await Supabase.instance.client.auth.signOut();
+        await ref.read(cloudWardrobeSyncProvider).clearCacheAndQueue();
+        await _invalidateRepos();
+        appAuthRefresh.requestRouterRefresh();
+        if (!context.mounted) {
+          return;
         }
+        // 已用 context.mounted 校验；此处与下一行同属同步 UI 收尾
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已切换为仅本机模式')));
+        if (!context.mounted) {
+          return;
+        }
+        // ignore: use_build_context_synchronously
+        context.go(AppRoutePaths.wardrobe);
       } else {
         await setWardrobeLocalOnlyMode(false);
         await _invalidateRepos();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已关闭仅本机模式，未登录时将跳转登录页')));
+        appAuthRefresh.requestRouterRefresh();
+        if (!context.mounted) {
+          return;
         }
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已关闭仅本机模式，未登录时将跳转登录页')));
+        if (!context.mounted) {
+          return;
+        }
+        // ignore: use_build_context_synchronously
+        context.go(AppRoutePaths.login);
       }
     } finally {
-      if (mounted) {
+      if (context.mounted) {
         setState(() => _modeToggleBusy = false);
       }
     }
@@ -128,10 +148,34 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  '已开启「仅本机模式」：未登录，数据仅存本机，不与账号同步。',
+                  '已开启「仅本机模式」：衣橱与搭配数据仅存本机 Isar，与云端账号数据相互独立；切换模式不会删除本机已有内容。',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _modeToggleBusy
+                  ? null
+                  : () async {
+                      setState(() => _modeToggleBusy = true);
+                      try {
+                        await setWardrobeLocalOnlyMode(false);
+                        await _invalidateRepos();
+                        appAuthRefresh.requestRouterRefresh();
+                        if (!context.mounted) {
+                          return;
+                        }
+                        // ignore: use_build_context_synchronously
+                        context.go(AppRoutePaths.login);
+                      } finally {
+                        if (context.mounted) {
+                          setState(() => _modeToggleBusy = false);
+                        }
+                      }
+                    },
+              icon: const Icon(Icons.cloud_outlined),
+              label: const Text('登录并使用云端衣橱'),
             ),
             const SizedBox(height: 8),
             SwitchListTile(

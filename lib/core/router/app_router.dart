@@ -95,7 +95,10 @@ abstract final class AppRouter {
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
     refreshListenable: appAuthRefresh,
-    initialLocation: AppRoutePaths.wardrobe,
+    // 已配置云端且未选「仅本机」时冷启动进登录页，引导使用账号；仅本机或未配置云端则进衣橱
+    initialLocation: (!supabaseCloudEnabled || wardrobeLocalOnlyMode)
+        ? AppRoutePaths.wardrobe
+        : AppRoutePaths.login,
     redirect: _authRedirect,
     routes: <RouteBase>[
       GoRoute(

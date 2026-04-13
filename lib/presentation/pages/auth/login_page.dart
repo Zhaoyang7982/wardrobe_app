@@ -7,6 +7,7 @@ import '../../../core/auth/auth_refresh_listenable.dart';
 import '../../../core/data/wardrobe_local_only_preference.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/repositories/repository_providers.dart';
+import '../../../data/supabase/supabase_bootstrap_state.dart';
 import '../../../data/sync/sync_providers.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -21,6 +22,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _loading = false;
+  bool _localOnlyLoading = false;
   String? _error;
 
   @override
@@ -64,6 +66,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     } finally {
       if (mounted) {
         setState(() => _loading = false);
+      }
+    }
+  }
+
+  /// 不登录进入本机衣橱（与云端数据隔离，卸载前持久保留）
+  Future<void> _enterLocalOnlyMode() async {
+    if (!supabaseCloudEnabled || _localOnlyLoading) {
+      return;
+    }
+    setState(() => _localOnlyLoading = true);
+    try {
+      await setWardrobeLocalOnlyMode(true);
+      ref.invalidate(clothingRepositoryProvider);
+      ref.invalidate(outfitRepositoryProvider);
+      ref.invalidate(syncPendingCountProvider);
+      appAuthRefresh.requestRouterRefresh();
+      if (!mounted) {
+        return;
+      }
+      context.go(AppRoutePaths.wardrobe);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = '进入本机模式失败：$e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _localOnlyLoading = false);
       }
     }
   }
@@ -117,6 +146,35 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   onPressed: _loading ? null : () => context.push(AppRoutePaths.register),
                   child: const Text('没有账号？注册'),
                 ),
+                if (supabaseCloudEnabled) ...[
+                  const SizedBox(height: 32),
+                  Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                  const SizedBox(height: 16),
+                  Text(
+                    '不想登录？',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '数据只保存在本机，不与任何云端账号同步；之后仍可在「我的」里登录以使用云端衣橱。',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.4,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: (_loading || _localOnlyLoading) ? null : _enterLocalOnlyMode,
+                    icon: _localOnlyLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.smartphone_outlined),
+                    label: Text(_localOnlyLoading ? '正在进入…' : '仅在本机使用（不登录）'),
+                  ),
+                ],
               ],
             ),
           ),
