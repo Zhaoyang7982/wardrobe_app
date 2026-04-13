@@ -45,16 +45,29 @@ class CloudWardrobeSync {
   }
 
   Future<List<Map<String, dynamic>>> _loadQueue() async {
-    final p = await SharedPreferences.getInstance();
-    final s = p.getString(_keyQueue);
-    if (s == null || s.isEmpty) {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final s = p.getString(_keyQueue);
+      if (s == null || s.isEmpty) {
+        return [];
+      }
+      final decoded = jsonDecode(s);
+      if (decoded is! List) {
+        return [];
+      }
+      final out = <Map<String, dynamic>>[];
+      for (final e in decoded) {
+        if (e is Map) {
+          out.add(Map<String, dynamic>.from(e));
+        }
+      }
+      return out;
+    } catch (e, st) {
+      debugPrint('读取同步队列失败，已清空异常数据: $e\n$st');
+      final p = await SharedPreferences.getInstance();
+      await p.remove(_keyQueue);
       return [];
     }
-    final decoded = jsonDecode(s);
-    if (decoded is! List) {
-      return [];
-    }
-    return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
   Future<void> _saveQueue(List<Map<String, dynamic>> ops) async {
@@ -111,18 +124,33 @@ class CloudWardrobeSync {
       };
 
   Future<List<Clothing>?> loadClothes() async {
-    final p = await SharedPreferences.getInstance();
-    final s = p.getString(_keyClothes);
-    if (s == null || s.isEmpty) {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final s = p.getString(_keyClothes);
+      if (s == null || s.isEmpty) {
+        return null;
+      }
+      final decoded = jsonDecode(s);
+      if (decoded is! List) {
+        return null;
+      }
+      final out = <Clothing>[];
+      for (final e in decoded) {
+        if (e is Map) {
+          out.add(
+            SupabaseClothingRepository.fromRow(
+              Map<String, dynamic>.from(e),
+            ),
+          );
+        }
+      }
+      return out;
+    } catch (e, st) {
+      debugPrint('读取衣物离线缓存失败，已丢弃: $e\n$st');
+      final p = await SharedPreferences.getInstance();
+      await p.remove(_keyClothes);
       return null;
     }
-    final decoded = jsonDecode(s);
-    if (decoded is! List) {
-      return null;
-    }
-    return decoded
-        .map((e) => SupabaseClothingRepository.fromRow(Map<String, dynamic>.from(e as Map)))
-        .toList();
   }
 
   Future<void> saveClothes(List<Clothing> list) async {
@@ -148,18 +176,33 @@ class CloudWardrobeSync {
   }
 
   Future<List<Outfit>?> loadOutfits() async {
-    final p = await SharedPreferences.getInstance();
-    final s = p.getString(_keyOutfits);
-    if (s == null || s.isEmpty) {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final s = p.getString(_keyOutfits);
+      if (s == null || s.isEmpty) {
+        return null;
+      }
+      final decoded = jsonDecode(s);
+      if (decoded is! List) {
+        return null;
+      }
+      final out = <Outfit>[];
+      for (final e in decoded) {
+        if (e is Map) {
+          out.add(
+            SupabaseOutfitRepository.fromRow(
+              Map<String, dynamic>.from(e),
+            ),
+          );
+        }
+      }
+      return out;
+    } catch (e, st) {
+      debugPrint('读取搭配离线缓存失败，已丢弃: $e\n$st');
+      final p = await SharedPreferences.getInstance();
+      await p.remove(_keyOutfits);
       return null;
     }
-    final decoded = jsonDecode(s);
-    if (decoded is! List) {
-      return null;
-    }
-    return decoded
-        .map((e) => SupabaseOutfitRepository.fromRow(Map<String, dynamic>.from(e as Map)))
-        .toList();
   }
 
   Future<void> saveOutfits(List<Outfit> list) async {

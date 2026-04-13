@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/auth/auth_refresh_listenable.dart';
 import '../../../core/data/wardrobe_local_only_preference.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/repositories/repository_providers.dart';
@@ -45,8 +46,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       await setWardrobeLocalOnlyMode(false);
       ref.invalidate(clothingRepositoryProvider);
       ref.invalidate(outfitRepositoryProvider);
-      await ref.read(cloudWardrobeSyncProvider).flushIfOnline();
+      try {
+        await ref.read(cloudWardrobeSyncProvider).flushIfOnline();
+      } catch (e, st) {
+        debugPrint('登录后同步队列失败（已登录，可稍后重试）: $e\n$st');
+      }
       ref.invalidate(syncPendingCountProvider);
+      appAuthRefresh.requestRouterRefresh();
+      if (!mounted) {
+        return;
+      }
+      context.go(AppRoutePaths.wardrobe);
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {
