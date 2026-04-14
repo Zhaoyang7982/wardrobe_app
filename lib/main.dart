@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/constants/app_constants.dart';
@@ -20,21 +19,28 @@ ThemeData _themeWithWebCjkTextTheme(ThemeData theme) {
   if (!kIsWeb) {
     return theme;
   }
+  // 不用 google_fonts：国内访问 fonts.gstatic.com 易失败或极慢，会拖死首屏
+  const cjkFallback = <String>[
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    'Noto Sans SC',
+    'sans-serif',
+  ];
   return theme.copyWith(
-    textTheme: GoogleFonts.notoSansScTextTheme(theme.textTheme),
-    primaryTextTheme: GoogleFonts.notoSansScTextTheme(theme.primaryTextTheme),
+    textTheme: theme.textTheme.apply(
+      fontFamily: cjkFallback.first,
+      fontFamilyFallback: cjkFallback.sublist(1),
+    ),
+    primaryTextTheme: theme.primaryTextTheme.apply(
+      fontFamily: cjkFallback.first,
+      fontFamilyFallback: cjkFallback.sublist(1),
+    ),
   );
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kIsWeb) {
-    try {
-      await GoogleFonts.pendingFonts([GoogleFonts.notoSansSc()]);
-    } catch (e, st) {
-      debugPrint('Noto Sans SC preload skipped: $e\n$st');
-    }
-  }
   await _loadEnv();
   await _tryInitSupabase();
   await loadWardrobeLocalOnlyPreference();
