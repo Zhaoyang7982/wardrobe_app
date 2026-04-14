@@ -25,37 +25,45 @@ import '../../presentation/pages/wardrobe/today_recommendation_page.dart';
 import '../../domain/usecases/outfit_recommendation_usecase.dart';
 import '../../presentation/pages/stats/stats_page.dart';
 import '../../presentation/pages/travel_page.dart';
+import 'web_nav_prefix.dart';
+
+String _routeAbs(String path) {
+  assert(path.startsWith('/'));
+  final p = webNavPathPrefix;
+  if (p.isEmpty) return path;
+  return '$p$path';
+}
 
 /// 路由路径常量，跳转时优先使用此类避免硬编码散落
 abstract final class AppRoutePaths {
   AppRoutePaths._();
 
-  static const onboarding = '/onboarding';
-  static const login = '/login';
-  static const register = '/register';
-  static const home = '/home';
-  static const wardrobe = '/wardrobe';
-  static const todayRecommendation = '/wardrobe/today-recommendation';
+  static String get onboarding => _routeAbs('/onboarding');
+  static String get login => _routeAbs('/login');
+  static String get register => _routeAbs('/register');
+  static String get home => _routeAbs('/home');
+  static String get wardrobe => _routeAbs('/wardrobe');
+  static String get todayRecommendation => _routeAbs('/wardrobe/today-recommendation');
 
   /// Web 主导航内「今日推荐」Tab（仅 Web 构建注册对应 [StatefulShellBranch]）
-  static const todayRecommendationsTab = '/today-recommendations';
-  static const outfit = '/outfit';
-  static const calendar = '/calendar';
-  static const profile = '/profile';
-  static const clothingAdd = '/clothing/add';
-  static const outfitCreate = '/outfit/create';
-  static const outfitRecycleBin = '/outfit/recycle-bin';
-  static const travel = '/travel';
-  static const stats = '/stats';
+  static String get todayRecommendationsTab => _routeAbs('/today-recommendations');
+  static String get outfit => _routeAbs('/outfit');
+  static String get calendar => _routeAbs('/calendar');
+  static String get profile => _routeAbs('/profile');
+  static String get clothingAdd => _routeAbs('/clothing/add');
+  static String get outfitCreate => _routeAbs('/outfit/create');
+  static String get outfitRecycleBin => _routeAbs('/outfit/recycle-bin');
+  static String get travel => _routeAbs('/travel');
+  static String get stats => _routeAbs('/stats');
 
-  static String clothingDetail(String id) => '/clothing/$id';
+  static String clothingDetail(String id) => _routeAbs('/clothing/$id');
 
-  static String clothingEdit(String id) => '/clothing/$id/edit';
+  static String clothingEdit(String id) => _routeAbs('/clothing/$id/edit');
 
-  static String outfitDetail(String id) => '/outfit/$id';
+  static String outfitDetail(String id) => _routeAbs('/outfit/$id');
 
   /// 今日推荐等非已存搭配：用 [context.push] 并传 `extra: RecommendedOutfitBundle`
-  static const recommendedOutfitPreview = '/outfit/recommendation';
+  static String get recommendedOutfitPreview => _routeAbs('/outfit/recommendation');
 }
 
 bool _isPublicPath(String loc) {
@@ -101,6 +109,16 @@ abstract final class AppRouter {
         : AppRoutePaths.login,
     redirect: _authRedirect,
     routes: <RouteBase>[
+      if (webNavPathPrefix.isNotEmpty) ...[
+        GoRoute(
+          path: webNavPathPrefix,
+          redirect: (_, _) => AppRoutePaths.wardrobe,
+        ),
+        GoRoute(
+          path: '$webNavPathPrefix/',
+          redirect: (_, _) => AppRoutePaths.wardrobe,
+        ),
+      ],
       GoRoute(
         path: AppRoutePaths.onboarding,
         parentNavigatorKey: rootNavigatorKey,
@@ -182,7 +200,7 @@ abstract final class AppRouter {
         builder: (context, state) => const AddClothingPage(),
       ),
       GoRoute(
-        path: '/clothing/:id/edit',
+        path: _routeAbs('/clothing/:id/edit'),
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
@@ -190,7 +208,7 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
-        path: '/clothing/:id',
+        path: _routeAbs('/clothing/:id'),
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
@@ -226,7 +244,7 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
-        path: '/outfit/:id',
+        path: _routeAbs('/outfit/:id'),
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
