@@ -40,7 +40,8 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           REPO="${GITHUB_REPOSITORY##*/}"
-          flutter build web --release --base-href="/${REPO}/" \
+          # 默认从 gstatic 拉 CanvasKit；国内等网络易白屏，改为随站点一同部署
+          flutter build web --release --base-href="/${REPO}/" --no-web-resources-cdn \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 
