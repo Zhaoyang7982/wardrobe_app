@@ -1,3 +1,6 @@
+import 'dart:math' show min;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +13,7 @@ import '../../../domain/models/clothing.dart';
 import '../../../domain/models/outfit.dart';
 import '../../widgets/outfit_clothing_collage.dart';
 
-/// 创建搭配：上为拼贴预览 + 已选列表（可排序/移除），下为分类选择器
+/// 创建搭配：移动端上预览下选衣；Web 端左预览右选衣
 class CreateOutfitPage extends ConsumerStatefulWidget {
   const CreateOutfitPage({super.key});
 
@@ -260,6 +263,197 @@ class _CreateOutfitPageState extends ConsumerState<CreateOutfitPage> {
     }
   }
 
+  /// 拼贴预览区（圆角底 + 空态文案 / 拼贴）
+  Widget _collagePreviewBox(ThemeData theme) {
+    final emptyHint = kIsWeb
+        ? '在右侧点选衣物加入套装；再次点选可移除。\n'
+            '可在列表中拖动调整顺序。'
+        : '在下方点选衣物加入套装；再次点选可移除。\n'
+            '可在列表中拖动调整顺序。';
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.brightness == Brightness.dark
+            ? theme.colorScheme.surfaceContainerHigh
+            : const Color(0xFFF5F2EC),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _selectedClothing.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppTheme.spaceMd),
+                child: Text(
+                  emptyHint,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(AppTheme.spaceSm),
+              child: OutfitClothingCollage(
+                clothingIds: _selectedOrderedIds,
+                clothingById: _clothingById,
+                compact: false,
+              ),
+            ),
+    );
+  }
+
+  /// 预览标题 + 拼贴 + 已选排序列表
+  Widget _buildPreviewColumn(ThemeData theme) {
+    final previewCore = kIsWeb
+        ? Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final side = min(constraints.maxWidth, constraints.maxHeight);
+                return Align(
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    width: side,
+                    height: side,
+                    child: _collagePreviewBox(theme),
+                  ),
+                );
+              },
+            ),
+          )
+        : AspectRatio(
+            aspectRatio: 1,
+            child: _collagePreviewBox(theme),
+          );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppTheme.spaceMd,
+        AppTheme.spaceMd,
+        AppTheme.spaceMd,
+        AppTheme.spaceXs,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '套装预览',
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: AppTheme.spaceSm),
+          previewCore,
+          if (_selectedClothing.isNotEmpty) ...[
+            const SizedBox(height: AppTheme.spaceSm),
+            Text(
+              '已选（${_selectedClothing.length}）· 长按拖动排序',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spaceXs),
+            SizedBox(
+              height: 132,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                  child: ReorderableListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    buildDefaultDragHandles: false,
+                    itemCount: _selectedClothing.length,
+                    onReorder: _reorderSelection,
+                    proxyDecorator: (child, index, animation) {
+                      return AnimatedBuilder(
+                        animation: animation,
+                        builder: (context, _) {
+                          final t = Curves.easeInOut.transform(animation.value);
+                          return Transform.scale(
+                            scale: 1.0 + 0.04 * t,
+                            child: Material(
+                              elevation: 6 * t,
+                              color: Colors.transparent,
+                              shadowColor: Colors.black26,
+                              child: child,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    itemBuilder: (context, i) {
+                      final c = _selectedClothing[i];
+                      final ref = _cutoutRef(c);
+                      return ListTile(
+                        key: ValueKey<String>(c.id),
+                        dense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppTheme.spaceSm,
+                        ),
+                        leading: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: ColoredBox(
+                              color: const Color(0xFFE8E4DD),
+                              child: imageFromClothingRef(
+                                ref,
+                                fit: BoxFit.contain,
+                                placeholder: Icon(
+                                  Icons.checkroom_outlined,
+                                  size: 22,
+                                  color: theme.colorScheme.outline,
+                                ),
+                                errorBuilder: (ctx, e, s) => Icon(
+                                  Icons.broken_image_outlined,
+                                  color: theme.colorScheme.outline,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        title: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(
+                          c.category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: '移除',
+                              onPressed: () => _removeAt(i),
+                              icon: const Icon(Icons.close),
+                            ),
+                            ReorderableDragStartListener(
+                              index: i,
+                              child: const Padding(
+                                padding: EdgeInsets.only(right: 4),
+                                child: Icon(Icons.drag_handle),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -291,182 +485,50 @@ class _CreateOutfitPageState extends ConsumerState<CreateOutfitPage> {
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null
               ? Center(child: Text('加载衣物失败：$_loadError'))
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppTheme.spaceMd,
-                        AppTheme.spaceMd,
-                        AppTheme.spaceMd,
-                        AppTheme.spaceXs,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            '套装预览',
-                            style: theme.textTheme.titleSmall,
+              : kIsWeb
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: _buildPreviewColumn(theme),
+                        ),
+                        VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: _ClothingPickerPanel(
+                            categories: _categories,
+                            tabCategory: _tabCategory,
+                            onCategoryChanged: (c) => setState(() => _tabCategory = c),
+                            clothes: _filteredClothes,
+                            imageRef: _cutoutRef,
+                            selectedIds: _selectedIds,
+                            onPick: _togglePick,
                           ),
-                          const SizedBox(height: AppTheme.spaceSm),
-                          AspectRatio(
-                            aspectRatio: 1,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: theme.brightness == Brightness.dark
-                                    ? theme.colorScheme.surfaceContainerHigh
-                                    : const Color(0xFFF5F2EC),
-                                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                border: Border.all(
-                                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                                ),
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: _selectedClothing.isEmpty
-                                  ? Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(AppTheme.spaceMd),
-                                        child: Text(
-                                          '在下方点选衣物加入套装；再次点选可移除。\n'
-                                          '可在列表中拖动调整顺序。',
-                                          textAlign: TextAlign.center,
-                                          style: theme.textTheme.bodyMedium?.copyWith(
-                                            color: theme.colorScheme.outline,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  : Padding(
-                                      padding: const EdgeInsets.all(AppTheme.spaceSm),
-                                      child: OutfitClothingCollage(
-                                        clothingIds: _selectedOrderedIds,
-                                        clothingById: _clothingById,
-                                        compact: false,
-                                      ),
-                                    ),
-                            ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildPreviewColumn(theme),
+                        Expanded(
+                          child: _ClothingPickerPanel(
+                            categories: _categories,
+                            tabCategory: _tabCategory,
+                            onCategoryChanged: (c) => setState(() => _tabCategory = c),
+                            clothes: _filteredClothes,
+                            imageRef: _cutoutRef,
+                            selectedIds: _selectedIds,
+                            onPick: _togglePick,
                           ),
-                          if (_selectedClothing.isNotEmpty) ...[
-                            const SizedBox(height: AppTheme.spaceSm),
-                            Text(
-                              '已选（${_selectedClothing.length}）· 长按拖动排序',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.outline,
-                              ),
-                            ),
-                            const SizedBox(height: AppTheme.spaceXs),
-                            SizedBox(
-                              height: 132,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.surfaceContainerLow,
-                                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                                  border: Border.all(
-                                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
-                                  ),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                                  child: ReorderableListView.builder(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    buildDefaultDragHandles: false,
-                                    itemCount: _selectedClothing.length,
-                                    onReorder: _reorderSelection,
-                                    proxyDecorator: (child, index, animation) {
-                                      return AnimatedBuilder(
-                                        animation: animation,
-                                        builder: (context, _) {
-                                          final t = Curves.easeInOut.transform(animation.value);
-                                          return Transform.scale(
-                                            scale: 1.0 + 0.04 * t,
-                                            child: Material(
-                                              elevation: 6 * t,
-                                              color: Colors.transparent,
-                                              shadowColor: Colors.black26,
-                                              child: child,
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                    itemBuilder: (context, i) {
-                                      final c = _selectedClothing[i];
-                                      final ref = _cutoutRef(c);
-                                      return ListTile(
-                                        key: ValueKey<String>(c.id),
-                                        dense: true,
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          horizontal: AppTheme.spaceSm,
-                                        ),
-                                        leading: SizedBox(
-                                          width: 48,
-                                          height: 48,
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(6),
-                                            child: ColoredBox(
-                                              color: const Color(0xFFE8E4DD),
-                                              child: imageFromClothingRef(
-                                                ref,
-                                                fit: BoxFit.contain,
-                                                placeholder: Icon(
-                                                  Icons.checkroom_outlined,
-                                                  size: 22,
-                                                  color: theme.colorScheme.outline,
-                                                ),
-                                                errorBuilder: (ctx, e, s) => Icon(
-                                                  Icons.broken_image_outlined,
-                                                  color: theme.colorScheme.outline,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        title: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                                        subtitle: Text(
-                                          c.category,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              tooltip: '移除',
-                                              onPressed: () => _removeAt(i),
-                                              icon: const Icon(Icons.close),
-                                            ),
-                                            ReorderableDragStartListener(
-                                              index: i,
-                                              child: const Padding(
-                                                padding: EdgeInsets.only(right: 4),
-                                                child: Icon(Icons.drag_handle),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: _ClothingPickerPanel(
-                        categories: _categories,
-                        tabCategory: _tabCategory,
-                        onCategoryChanged: (c) => setState(() => _tabCategory = c),
-                        clothes: _filteredClothes,
-                        imageRef: _cutoutRef,
-                        selectedIds: _selectedIds,
-                        onPick: _togglePick,
-                      ),
-                    ),
-                  ],
-                ),
     );
   }
 }
