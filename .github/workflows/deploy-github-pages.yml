@@ -45,6 +45,21 @@ jobs:
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 
+      # 子路径 + Service Worker 易留下旧 main.dart.js / 旧 CanvasKit 策略，表现为长期白屏；线上直出静态即可
+      - name: 去掉 flutter_bootstrap 中的 Service Worker 注册
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          p = Path("build/web/flutter_bootstrap.js")
+          s = p.read_text(encoding="utf-8")
+          pat = r"_flutter\.loader\.load\(\{\s*serviceWorkerSettings:\s*\{[^}]*\}\s*\}\);"
+          new, n = re.subn(pat, "_flutter.loader.load({});", s, count=1)
+          if n != 1:
+              raise SystemExit(f"expected 1 replacement in flutter_bootstrap.js, got {n}")
+          p.write_text(new, encoding="utf-8")
+          PY
+
       - name: SPA 404 (same as index.html)
         run: cp build/web/index.html build/web/404.html
 
